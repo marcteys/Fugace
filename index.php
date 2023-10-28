@@ -29,10 +29,38 @@
 <div class="rCol"> 
      <div id ="prv" style="height:auto; width:auto; float:left; margin-bottom: 5px"></div>
        </div>
+
+           <div class="rCol" style="clear:both;">
+
+<div class="slider">
+
+  <label for="gamma">Gamma</label>
+    <input type="range" id="gamma" name="gamma" min="0.01" max="10.0"  value="0" step="0.01" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
+      <p class="text">12</p>
+</div>
+
+<div class="slider">
+
+  <label for="brightness">Brightness</label>
+
+  <input type="range" id="brightness" name="brightness" min="-200" max="200" value="0" step="0.5" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
+    <p class="text">12</p>
+
+  </div>
+
+
+<div class="slider">
+     <label for="contrast">Contrast</label>
+
+  <input type="range" id="contrast" name="contrast" min="-100" max="100" value="0" step="0.5"  onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
+  <p class="text">12</p>
+</div>
+
+</div>
     <div class="rCol" style="clear:both;">
 
     <label for="file-upload" class="custom-file-upload" onclick="getFile()">
-     Upload Photo
+     Upload New Photo
 </label>
 <input id="file" type="file"  onChange=" return submitForm();"/>
     <input type="hidden" id="filecount" value='0'>
@@ -43,6 +71,35 @@
 
 
 <script>
+
+ function rangeSlide(div, value) {
+    textDiv = div.parentElement.querySelector('.text').innerHTML = value;
+ }
+
+
+ function rangeSlideChange(div, value) {
+  rangeSlide(div,value);
+  console.log("change");
+
+     $.ajax({
+            url: "functions/CreateFolderStructure.php",
+            type: "POST",
+            data: {
+              name: inputValue,
+              override:$('#overridecheck').is(":checked")
+              },
+            success: function(response) {
+              var status = ParseAndDisplayContent("#returnfolderstructure", response, "Folder structure ");
+            },
+            error: function(xhr, status, error) {
+              // Handle the error
+              console.log(error);
+            }
+          });
+
+     
+ }
+
 
 function getFile(){
      document.getElementById("file").click();
