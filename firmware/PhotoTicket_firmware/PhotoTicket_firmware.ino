@@ -163,7 +163,7 @@ void times() {
 }
 
 void dw() {
-  downloadAndStoreFile("https://marcteyssier.com/experiment/ticket/atlas/phototicket.txt", "/phototicket.txt");
+  downloadAndStoreFile("https://marcteyssier.com/experiment/PhotoTicket/phototicket.txt", "/phototicket.txt");
 }
 
 // n1 = "max heating dots" 0-255 -- max number of thermal print head
@@ -299,7 +299,7 @@ void convertFile() {
   int file_height = 421;
   // Calculate height : 
   size_t fileSize = file.size();
-  int file_height = fileSize * 4 / file_width;
+  file_height = fileSize * 4 / file_width;
   
 
 
