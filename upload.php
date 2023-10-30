@@ -4,31 +4,33 @@
 
 
 $filetype = array('jpeg','jpg','png','gif','PNG','JPEG','JPG');
-   foreach ($_FILES as $key )
+
+foreach ($_FILES as $key )
     {
 
-          $name =time()."-".$key['name'];
+      $name =time()."-".$key['name'];
 
-          $path='images/'.$name;
-          $file_ext =  pathinfo($name, PATHINFO_EXTENSION);
-          if(in_array(strtolower($file_ext), $filetype))
-          {
-            if($key['name']<1000000)
-            {
-
-             @move_uploaded_file($key['tmp_name'],$path);
-             echo $name;
-
-            }
-           else
-           {
-               echo "FILE_SIZE_ERROR";
-           }
-        }
-        else
+      $path='images/'.$name;
+      $file_ext =  pathinfo($name, PATHINFO_EXTENSION);
+      if(in_array(strtolower($file_ext), $filetype))
+      {
+        if($key['name']<1000000)
         {
-            echo "FILE_TYPE_ERROR";
-        }// Its simple code.Its not with proper validation.
+
+         @move_uploaded_file($key['tmp_name'],$path);
+        // @move_uploaded_file($key['tmp_name'],'images/last.'.strtolower($file_ext));
+         echo $name;
+
+        }
+       else
+       {
+           echo "FILE_SIZE_ERROR";
+       }
+    }
+    else
+    {
+        echo "FILE_TYPE_ERROR";
+    }// Its simple code.Its not with proper validation.
 }
 
         exit();

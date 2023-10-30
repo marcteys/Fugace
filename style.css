@@ -82,9 +82,8 @@ input[type="file"] {
   text-align: center;
   border-radius: 1px;
   margin-top: 10px;
+  margin-bottom: 20px;
 }
-
-
 
 
 .slider {
@@ -95,8 +94,8 @@ input[type="file"] {
 }
 
 .slider label{
-float:left;
-width: 20%;
+  float:left;
+  width: 20%;
 }
 
 .slider input[type="range"] {

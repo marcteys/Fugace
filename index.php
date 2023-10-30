@@ -1,4 +1,5 @@
-<?php $config['base_url'] = 'http://localhost/phototicket/';
+<?php
+$config['base_url'] = 'http://localhost/phototicket/';
 ?>
 <!DOCTYPE html>
 <html>
@@ -26,70 +27,96 @@
 <div class="ticket">
   <div class="ticket__content">
     <h1>Photo Ticket</h1>
-<div class="rCol"> 
-     <div id ="prv" style="height:auto; width:auto; float:left; margin-bottom: 5px"></div>
-       </div>
 
-           <div class="rCol" style="clear:both;">
-
-<div class="slider">
-
-  <label for="gamma">Gamma</label>
-    <input type="range" id="gamma" name="gamma" min="0.01" max="10.0"  value="0" step="0.01" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-      <p class="text">12</p>
-</div>
-
-<div class="slider">
-
-  <label for="brightness">Brightness</label>
-
-  <input type="range" id="brightness" name="brightness" min="-200" max="200" value="0" step="0.5" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-    <p class="text">12</p>
-
-  </div>
-
-
-<div class="slider">
-     <label for="contrast">Contrast</label>
-
-  <input type="range" id="contrast" name="contrast" min="-100" max="100" value="0" step="0.5"  onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-  <p class="text">12</p>
-</div>
-
-</div>
-    <div class="rCol" style="clear:both;">
+   <div class="rCol" style="clear:both;">
 
     <label for="file-upload" class="custom-file-upload" onclick="getFile()">
-     Upload New Photo
-</label>
-<input id="file" type="file"  onChange=" return submitForm();"/>
-    <input type="hidden" id="filecount" value='0'>
+       Upload New Photo
+  </label>
+      <input id="file" type="file"  onChange=" return submitForm();"/>
+      <input type="hidden" id="filecount" value='0'>
   </div>
+
+
+
+    <div class="rCol"> 
+     <div id ="prv" style="height:auto; width:auto; float:left; margin-bottom: 5px"> </div>
+    </div>
+
+    <div class="rCol" style="clear:both;">
+      <div class="slider">
+        <label for="gamma">Gamma</label>
+          <input type="range" id="gamma" name="gamma" min="0.01" max="10.0"  value="0" step="0.01" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
+            <p class="text">12</p>
+      </div>
+
+      <div class="slider">
+        <label for="brightness">Brightness</label>
+        <input type="range" id="brightness" name="brightness" min="-200" max="200" value="0" step="0.5" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
+        <p class="text">12</p>
+      </div>
+
+
+      <div class="slider">
+           <label for="contrast">Contrast</label>
+        <input type="range" id="contrast" name="contrast" min="-100" max="100" value="0" step="0.5"  onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
+        <p class="text">12</p>
+      </div>
+
+
+      <div class="slider">
+           <label for="ditherMode">Dither Mode</label>
+           <select name="ditherMode" id="ditherMode" onChange="rangeSlideChange(null,null)">
+            <?php
+                   $list = array( "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
+                   foreach($list as $l) {
+                      echo '<option value="'.$l.'">'.$l.'</option>';
+                   }
+                  ?>
+        </select>
+      </div>
+
+
+
+
+
+
+
+    </div>
+
+
 </div>
-
-
 
 
 <script>
 
+
+  const mainContentDiv = document.querySelector("#prv");
+  
  function rangeSlide(div, value) {
     textDiv = div.parentElement.querySelector('.text').innerHTML = value;
  }
 
-
  function rangeSlideChange(div, value) {
-  rangeSlide(div,value);
-  console.log("change");
+  if(div != null)  rangeSlide(div,value);
+
+  if(document.querySelector('.image_uploaded') == null) return;
 
      $.ajax({
-            url: "functions/CreateFolderStructure.php",
+            url: "dither.php",
             type: "POST",
             data: {
-              name: inputValue,
-              override:$('#overridecheck').is(":checked")
+              sourceImage: document.querySelector('.image_uploaded').dataset.url,
+              gamma: document.querySelector('#gamma').value,
+              brightness:document.querySelector('#contrast').value,
+              contrast:document.querySelector('#brightness').value,
+              ditherMode:document.querySelector('#ditherMode').value + ",2",
               },
             success: function(response) {
-              var status = ParseAndDisplayContent("#returnfolderstructure", response, "Folder structure ");
+              console.log(response);
+               $('#prv').innerHTML = "";
+              var img = '<div class="image_uploaded" data-url="/images/'+response+'"><img  src="<?php echo $config['base_url'] ?>images/'+response+'"></div>';
+                  $('#prv').append(img);
             },
             error: function(xhr, status, error) {
               // Handle the error
@@ -97,7 +124,6 @@
             }
           });
 
-     
  }
 
 
@@ -138,8 +164,12 @@ function submitForm() {
        {
         fcnt = parseInt(fcnt)+1;
         $('#filecount').val(fcnt);
-        var img = '<div class="dialog" id ="img_'+fcnt+'" ><img src="<?php echo $config['base_url'] ?>/images/'+data+'"><a href="#" id="rmv_'+fcnt+'" onclick="return removeit('+fcnt+')" class="close-classic"></a></div><input type="hidden" id="name_'+fcnt+'" value="'+data+'">';
+        var img = '<div class="image_uploaded" data-url="images/'+data+'" id ="img_'+fcnt+'" ><img  src="<?php echo $config['base_url'] ?>images/'+data+'"><a href="#" id="rmv_'+fcnt+'" onclick="return removeit('+fcnt+')" class="close-classic"></a></div><input type="hidden" id="name_'+fcnt+'" value="'+data+'">';
         $('#prv').append(img);
+
+
+        rangeSlideChange(null,null);
+
         lastImageDiv = img;
         if(fname!=='')
         {
@@ -162,7 +192,7 @@ function submitForm() {
   }//end size
   else
   {
-      imgclean.replaceWith( imgclean = imgclean.clone( true ) );//Its for reset the value of file type
+    imgclean.replaceWith( imgclean = imgclean.clone( true ) );//Its for reset the value of file type
     alert('Sorry File size exceeding from 1 Mb');
   }
   }//end FILETYPE
