@@ -26,20 +26,17 @@ echo "error";
 
     $image = DitherImage($sourceImage, floatval($gamma), floatval($brightness), floatval($contrast), $ditherMode  );
 
-
     /* Set the format to PNG */
-    $imagick->setImageFormat('jpg');
-    file_put_contents ("image.jpg", $imagick);
+    $image->setImageFormat('jpg');
 
-    $text = DitherImageToString("image.jpg");
+    file_put_contents ("images/last.jpg", $image);
+    $text = DitherImageToString("images/last.jpg");
     file_put_contents ("images/last.txt", $text);
 
-    echo "image.jpg"; 
-
+    echo '<img src="data:image/jpg;base64,'.base64_encode($image->getImageBlob()).'" alt="" />'; 
 
       /* Notice writeImages instead of writeImage */
     // echo '<img src="data:image/jpg;base64,'.base64_encode($imagick->getImageBlob()).'" alt="" />';
-
 
 
 

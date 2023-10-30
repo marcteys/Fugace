@@ -102,6 +102,8 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
   if(document.querySelector('.image_uploaded') == null) return;
 
+  sourceImage = document.querySelector('.image_uploaded').dataset.url;
+
      $.ajax({
             url: "dither.php",
             type: "POST",
@@ -113,9 +115,9 @@ $config['base_url'] = 'http://localhost/phototicket/';
               ditherMode:document.querySelector('#ditherMode').value + ",2",
               },
             success: function(response) {
-              console.log(response);
-               $('#prv').innerHTML = "";
-              var img = '<div class="image_uploaded" data-url="/images/'+response+'"><img  src="<?php echo $config['base_url'] ?>images/'+response+'"></div>';
+            //  console.log(response);
+               $('#prv').html("");
+              var img = '<div class="image_uploaded" data-url="'+sourceImage+'"> ' + response + '</div>';
                   $('#prv').append(img);
             },
             error: function(xhr, status, error) {
