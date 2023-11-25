@@ -169,8 +169,10 @@ function submitForm() {
       processData: false,  // tell jQuery not to process the data
       contentType: false   // tell jQuery not to set contentType
     }).done(function(data) {
+
        if(data!='FILE_SIZE_ERROR' || data!='FILE_TYPE_ERROR' )
        {
+        $('#prv').html("");
         fcnt = parseInt(fcnt)+1;
         $('#filecount').val(fcnt);
         var img = '<div class="image_uploaded" data-url="images/'+data+'" id ="img_'+fcnt+'" ><img  src="<?php echo $config['base_url'] ?>images/'+data+'"><a href="#" id="rmv_'+fcnt+'" onclick="return removeit('+fcnt+')" class="close-classic"></a></div><input type="hidden" id="name_'+fcnt+'" value="'+data+'">';
