@@ -1,28 +1,29 @@
 <?php
 
 
-
   if(
-    !isset($_POST["sourceImage"]) &&
-    !isset($_POST["gamma"]) &&
-    !isset($_POST["brightness"]) &&
-    !isset($_POST["ditherMode"]) &&
-    !isset($_POST["contrast"])
+    !isset($_GET["sourceImage"]) &&
+    !isset($_GET["gamma"]) &&
+    !isset($_GET["brightness"]) &&
+    !isset($_GET["ditherMode"]) &&
+    !isset($_GET["contrast"])
   ) {
 
-echo "error";
-
+    echo $_GET["sourceImage"] . "<br>";
+    echo $_GET["gamma"] . "<br>";
+    echo $_GET["brightness"] . "<br>";
+    echo $_GET["ditherMode"] . "<br>";
+    echo $_GET["contrast"] . "<br>";
 
   } else {
         require_once("utils/ImageToText.php");
 
 
-
-    $sourceImage = $_POST["sourceImage"];
-    $gamma = $_POST["gamma"];
-    $brightness = $_POST["brightness"];
-    $ditherMode = $_POST["ditherMode"];
-    $contrast = $_POST["contrast"];
+    $sourceImage = $_GET["sourceImage"];
+    $gamma = $_GET["gamma"];
+    $brightness = $_GET["brightness"];
+    $ditherMode = $_GET["ditherMode"];
+    $contrast = $_GET["contrast"];
 
     $image = DitherImage($sourceImage, floatval($gamma), floatval($brightness), floatval($contrast), $ditherMode  );
 
@@ -31,13 +32,12 @@ echo "error";
 
     file_put_contents ("images/last.jpg", $image);
     $text = DitherImageToString("images/last.jpg");
-    file_put_contents ("images/last.txt", $text);
+    file_put_contents ("phototicket.txt", $text);
 
     echo '<img src="data:image/jpg;base64,'.base64_encode($image->getImageBlob()).'" alt="" />'; 
 
       /* Notice writeImages instead of writeImage */
     // echo '<img src="data:image/jpg;base64,'.base64_encode($imagick->getImageBlob()).'" alt="" />';
-
 
 
   }
@@ -54,7 +54,7 @@ echo "error";
   $width = $imagick->getImageWidth();
   $height = $imagick->getImageHeight();
 
-  $imagick->whiteBalanceImage();
+  //$imagick->whiteBalanceImage();
 
 
     $imagick->scaleImage(384, 0, false);
@@ -74,6 +74,10 @@ echo "error";
       $imagick = $imagick->fxImage('intensity');
       $imagick->gammaImage($gamma, Imagick::CHANNEL_DEFAULT);
       $imagick->brightnessContrastImage($brightness, $contrast);
+
+      if(Imagick::getVersion()['versionNumber'] < 1800)
+       $imagick->OrderedPosterizeImage ($ditherMode);
+        else 
       $imagick->orderedDitherImage($ditherMode);
 
       return $imagick;

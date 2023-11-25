@@ -47,7 +47,8 @@ body {
 h1 {
 	text-align: center;
 	font-size: 30px;
-	margin-bottom: 20px;
+  margin-bottom: 20px;
+  margin-top: 10px;
 }
 
 
@@ -67,7 +68,9 @@ h1 {
 }
 
 
-
+.rCol {
+  margin-top: 10px;
+}
 
 
 input[type="file"] {

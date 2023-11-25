@@ -104,16 +104,22 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
   sourceImage = document.querySelector('.image_uploaded').dataset.url;
 
+  var data  = "sourceImage="+document.querySelector('.image_uploaded').dataset.url + "&" +
+              "gamma=" +  document.querySelector('#gamma').value + "&" +
+              "brightness=" + document.querySelector('#contrast').value + "&" +
+              "contrast=" + document.querySelector('#brightness').value + "&" +
+              "ditherMode=" + document.querySelector('#ditherMode').value + ",2";
+
+console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
+
+
      $.ajax({
-            url: "dither.php",
-            type: "POST",
-            data: {
-              sourceImage: document.querySelector('.image_uploaded').dataset.url,
-              gamma: document.querySelector('#gamma').value,
-              brightness:document.querySelector('#contrast').value,
-              contrast:document.querySelector('#brightness').value,
-              ditherMode:document.querySelector('#ditherMode').value + ",2",
-              },
+            url: "<?php echo $config['base_url'] ?>dither.php?"+data,
+            type: "GET",
+            headers: {
+                'Access-Control-Allow-Origin': '*'
+            },
+            crossDomain: true,
             success: function(response) {
             //  console.log(response);
                $('#prv').html("");
@@ -122,10 +128,11 @@ $config['base_url'] = 'http://localhost/phototicket/';
             },
             error: function(xhr, status, error) {
               // Handle the error
+              console.log(xhr);
+              console.log(status);
               console.log(error);
             }
           });
-
  }
 
 
@@ -155,7 +162,7 @@ function submitForm() {
      if(size<=10000000)
      {
     $.ajax({
-      url: "<?php echo $config['base_url'] ?>/upload.php",
+      url: "<?php echo $config['base_url'] ?>upload.php",
       type: "POST",
       data: data,
       enctype: 'multipart/form-data',

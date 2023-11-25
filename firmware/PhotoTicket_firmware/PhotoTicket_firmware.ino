@@ -34,6 +34,22 @@ Adafruit_Thermal printer(&mySerial, DTR_PIN);
 #include<Uduino.h>
 Uduino uduino("myArduinoName"); // Declare and name your object
 
+
+
+
+// Button 
+
+const int buttonPin = D1;  // the number of the pushbutton pin
+
+int buttonState;            // the current reading from the input pin
+int lastButtonState = LOW;  // the previous reading from the input pin
+
+unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
+unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
+
+
+
+
 void setup() {
   Serial.begin(115200);
   //Connect to Wi-Fi
@@ -79,9 +95,10 @@ void setup() {
   uduino.addCommand("times", times);
   uduino.addCommand("feed", f);
   uduino.addCommand("test", test);
-  uduino.addCommand("img", img);
   uduino.addCommand("rst", rst);
 
+
+  pinMode(buttonPin, INPUT_PULLUP);
 // heat 7 80 40
 // times 30000 2100
 // heat 11 120 40
@@ -125,11 +142,8 @@ void density() {
   char * b = uduino.getParameter(1);
   int two = uduino.charToInt(b);
 
-
   Serial.println("setting print density");
-
   printer.setPrintDensity(one, two);
-
 }
 
 /*
@@ -201,8 +215,38 @@ void heat() {
 
 void loop() {
   uduino.update();
+  ReadButton();
 }
 
+
+
+void ReadButton() {
+  int reading = digitalRead(buttonPin);
+
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    if (reading != buttonState) {
+      buttonState = reading;
+
+      if (buttonState == LOW) {
+        DownloadAndPrint();
+      }
+    }
+  }
+
+  lastButtonState = reading;
+}
+
+
+void DownloadAndPrint() {
+  downloadAndStoreFile("https://marcteyssier.com/experiment/PhotoTicket/phototicket.txt", "/phototicket.txt");
+  convertFile();
+  printer.feed(4);
+
+}
 
 void downloadAndStoreFile(const String& url, const String& filename) {
 
@@ -261,24 +305,6 @@ void downloadAndStoreFile(const String& url, const String& filename) {
 }
 
 
-void displayFileSize() {
-  File file = SPIFFS.open(filePath, "r");
-  if (!file) {
-    Serial.println("Failed to open file");
-    return;
-  }
-
-  size_t fileSize = file.size();
-  Serial.print("File size: ");
-  Serial.print(fileSize);
-  Serial.println(" bytes");
-
-  file.close();
-}
-
-
-
-
 const size_t BUFFER_SIZE = 256;
 
 
@@ -302,8 +328,6 @@ void convertFile() {
   file_height = fileSize * 4 / file_width;
   
 
-
-  
   
   int rounded_width = (file_width + 7) / 8;
 
@@ -377,58 +401,6 @@ uint8_t hexCharsToUint8(char c1, char c2) {
 
 
 
-
-void hexStringToByteArray(const String& hexString, uint8_t* byteArray, size_t byteArraySize) {
-  for (size_t i = 0; i < byteArraySize; i++) {
-    String hexByte = hexString.substring(i * 2, i * 2 + 2); // Get two characters at a time
-    byteArray[i] = strtoul(hexByte.c_str(), NULL, 16); // Convert hexadecimal string to uint8_t
-  }
-}
-
-void printByteArray(const uint8_t* byteArray, size_t byteArraySize) {
-  for (size_t i = 0; i < byteArraySize; i++) {
-    Serial.print(byteArray[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println();
-}
-
-
-
-
-
-void displayFileContent() {
-  File file = SPIFFS.open(filePath, "r");
-  if (!file) {
-    Serial.println("Failed to open file");
-    return;
-  }
-
-  Serial.println("File content:");
-  const size_t bufferSize = 48;
-  uint8_t buffer[bufferSize];
-  size_t bytesRead;
-
-  while ((bytesRead = file.read(buffer, bufferSize)) > 0) {
-    for (size_t i = 0; i < bytesRead; i++) {
-      Serial.print((char)buffer[i]);
-    }
-    Serial.println();
-  }
-
-  /*
-    while (file.available()) {
-      String line = file.readStringUntil('\n');
-      Serial.println(line);
-    }
-  */
-  file.close();
-}
-
-
-void img() {
-
-}
 
 void DisableWifi(void)
 {
