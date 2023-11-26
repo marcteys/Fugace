@@ -46,29 +46,27 @@ $config['base_url'] = 'http://localhost/phototicket/';
     <div class="rCol" style="clear:both;">
       <div class="slider">
         <label for="gamma">Gamma</label>
-          <input type="range" id="gamma" name="gamma" min="0.01" max="10.0"  value="0" step="0.01" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-            <p class="text">12</p>
+          <input type="range" id="gamma" name="gamma" min="0.01" max="10.0"  value="1" step="0.01" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
+            <p class="text">1</p>
       </div>
 
       <div class="slider">
         <label for="brightness">Brightness</label>
         <input type="range" id="brightness" name="brightness" min="-200" max="200" value="0" step="0.5" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-        <p class="text">12</p>
+        <p class="text">0</p>
       </div>
-
 
       <div class="slider">
            <label for="contrast">Contrast</label>
         <input type="range" id="contrast" name="contrast" min="-100" max="100" value="0" step="0.5"  onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-        <p class="text">12</p>
+        <p class="text">0</p>
       </div>
-
-
+      <hr>
       <div class="slider">
            <label for="ditherMode">Dither Mode</label>
            <select name="ditherMode" id="ditherMode" onChange="rangeSlideChange(null,null)">
             <?php
-                   $list = array( "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
+                   $list = array("Atkison", "FloydSteinberg", "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
                    foreach($list as $l) {
                       echo '<option value="'.$l.'">'.$l.'</option>';
                    }

@@ -17,6 +17,7 @@
 
   } else {
         require_once("utils/ImageToText.php");
+        require_once("utils/AtkinsonDither.php");
 
 
     $sourceImage = $_GET["sourceImage"];
@@ -49,15 +50,15 @@
     $path = $sourceImage;
     $imagick = new \Imagick(realpath($path));
    // $deskewImagick = clone $imagick;
-
+  $imagick->setImageBackgroundColor('white'); 
     // crop bottom "BNF "
-  $width = $imagick->getImageWidth();
-  $height = $imagick->getImageHeight();
-
   //$imagick->whiteBalanceImage();
 
 
     $imagick->scaleImage(384, 0, false);
+  $width = $imagick->getImageWidth();
+  $height = $imagick->getImageHeight();
+
 
    // $imagick->autoLevelImage();
       //-200 200 // -100 -100
@@ -70,15 +71,23 @@
     // todo : round to nearest 8 bits multi^le in height
 
     // Dither
-//  $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALEMATTE);
-      $imagick = $imagick->fxImage('intensity');
+  $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALEMATTE);
+    //  $imagick = $imagick->fxImage('intensity');
       $imagick->gammaImage($gamma, Imagick::CHANNEL_DEFAULT);
       $imagick->brightnessContrastImage($brightness, $contrast);
 
-      if(Imagick::getVersion()['versionNumber'] < 1800)
-       $imagick->OrderedPosterizeImage ($ditherMode);
-        else 
-      $imagick->orderedDitherImage($ditherMode);
+      if($ditherMode == "FloydSteinberg,2") {
+          $imagick->quantizeImage(2, imagick::COLORSPACE_GRAY, 2, false, false);
+
+      } else if($ditherMode == "Atkison,2") {
+         $imagick = AtkinsonDither($imagick);
+
+      }else {
+           if(Imagick::getVersion()['versionNumber'] < 1800)
+           $imagick->OrderedPosterizeImage ($ditherMode);
+            else 
+          $imagick->orderedDitherImage($ditherMode);
+      }
 
       return $imagick;
     /**
