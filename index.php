@@ -40,8 +40,21 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
 
     <div class="rCol"> 
-     <div id ="prv" style="height:auto; width:auto; float:left; margin-bottom: 5px"> </div>
+      <div id="overlay" style="opacity:0">
+        <span class="loader"><span class="loader-inner"></span></span>
+      </div>
+
+     <div id ="prv" style="height:auto; width:auto; float:left; margin-bottom: 5px">
+     </div>
     </div>
+
+
+      <hr>
+
+
+      <hr>
+
+
 
     <div class="rCol" style="clear:both;">
       <div class="slider">
@@ -90,7 +103,9 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
 
   const mainContentDiv = document.querySelector("#prv");
-  
+  const overlay = document.querySelector("#overlay");
+  overlay.style.opacity = 0;
+
  function rangeSlide(div, value) {
     textDiv = div.parentElement.querySelector('.text').innerHTML = value;
  }
@@ -110,6 +125,7 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
 console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
 
+                    overlay.style.opacity = 1;
 
      $.ajax({
             url: "<?php echo $config['base_url'] ?>dither.php?"+data,
@@ -123,6 +139,8 @@ console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
                $('#prv').html("");
               var img = '<div class="image_uploaded" data-url="'+sourceImage+'"> ' + response + '</div>';
                   $('#prv').append(img);
+                    overlay.style.opacity = 0;
+
             },
             error: function(xhr, status, error) {
               // Handle the error
@@ -175,6 +193,7 @@ function submitForm() {
         $('#filecount').val(fcnt);
         var img = '<div class="image_uploaded" data-url="images/'+data+'" id ="img_'+fcnt+'" ><img  src="<?php echo $config['base_url'] ?>images/'+data+'"><a href="#" id="rmv_'+fcnt+'" onclick="return removeit('+fcnt+')" class="close-classic"></a></div><input type="hidden" id="name_'+fcnt+'" value="'+data+'">';
         $('#prv').append(img);
+        overlay.style.opacity = 1;
 
 
         rangeSlideChange(null,null);
