@@ -51,8 +51,13 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
       <hr>
 
+    <div class="rCol" style="clear:both;">
+         <div class="slider">
+          <input type="checkbox" onChange="rangeSlideChange(null,null)" id="autoadjust" name="autoadjust" />
+          <label for="autoadjust">Auto Adjsut</label>
+        </div>
+    </div>
 
-      <hr>
 
 
 
@@ -119,8 +124,9 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
   var data  = "sourceImage="+document.querySelector('.image_uploaded').dataset.url + "&" +
               "gamma=" +  document.querySelector('#gamma').value + "&" +
-              "brightness=" + document.querySelector('#contrast').value + "&" +
-              "contrast=" + document.querySelector('#brightness').value + "&" +
+              "auto=" +  document.querySelector('#autoadjust').checked + "&" +
+              "brightness=" + document.querySelector('#brightness').value + "&" +
+              "contrast=" + document.querySelector('#contrast').value + "&" +
               "ditherMode=" + document.querySelector('#ditherMode').value + ",2";
 
 console.log("<?php echo $config['base_url'] ?>dither.php?"+data);

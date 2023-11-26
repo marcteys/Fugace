@@ -3,6 +3,7 @@
 
   if(
     !isset($_GET["sourceImage"]) &&
+    !isset($_GET["auto"]) &&
     !isset($_GET["gamma"]) &&
     !isset($_GET["brightness"]) &&
     !isset($_GET["ditherMode"]) &&
@@ -10,6 +11,7 @@
   ) {
 
     echo $_GET["sourceImage"] . "<br>";
+    echo $_GET["auto"] . "<br>";
     echo $_GET["gamma"] . "<br>";
     echo $_GET["brightness"] . "<br>";
     echo $_GET["ditherMode"] . "<br>";
@@ -22,11 +24,12 @@
 
     $sourceImage = $_GET["sourceImage"];
     $gamma = $_GET["gamma"];
+    $auto = $_GET["auto"] == "true" ? true:false;
     $brightness = $_GET["brightness"];
     $ditherMode = $_GET["ditherMode"];
     $contrast = $_GET["contrast"];
 
-    $image = DitherImage($sourceImage, floatval($gamma), floatval($brightness), floatval($contrast), $ditherMode  );
+    $image = DitherImage($sourceImage,$auto, floatval($gamma), floatval($brightness), floatval($contrast), $ditherMode);
 
     /* Set the format to PNG */
     $image->setImageFormat('jpg');
@@ -40,12 +43,11 @@
       /* Notice writeImages instead of writeImage */
     // echo '<img src="data:image/jpg;base64,'.base64_encode($imagick->getImageBlob()).'" alt="" />';
 
-
   }
 
 
 
-	function DitherImage($sourceImage, $gamma, $brightness, $contrast, $ditherMode) {
+	function DitherImage($sourceImage,$auto, $gamma, $brightness, $contrast, $ditherMode) {
 
     $path = $sourceImage;
     $imagick = new \Imagick(realpath($path));
@@ -71,10 +73,22 @@
     // todo : round to nearest 8 bits multi^le in height
 
     // Dither
-  $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALEMATTE);
+      $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALEMATTE);
     //  $imagick = $imagick->fxImage('intensity');
-      $imagick->gammaImage($gamma, Imagick::CHANNEL_DEFAULT);
-      $imagick->brightnessContrastImage($brightness, $contrast);
+
+      if($auto) {
+        $imagick->normalizeImage();
+        $imagick->autoLevelImage();
+        $imagick->gammaImage(1.7, Imagick::CHANNEL_DEFAULT);
+        $imagick->brightnessContrastImage(25, -15);
+
+        } else {
+          $imagick->gammaImage($gamma, Imagick::CHANNEL_DEFAULT);
+          $imagick->brightnessContrastImage($brightness, $contrast);
+        }
+
+
+
 
       if($ditherMode == "FloydSteinberg,2") {
           $imagick->quantizeImage(2, imagick::COLORSPACE_GRAY, 2, false, false);
