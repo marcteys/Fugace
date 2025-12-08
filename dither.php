@@ -20,6 +20,7 @@
   } else {
         require_once("utils/ImageToText.php");
         require_once("utils/AtkinsonDither.php");
+        require_once("utils/FloydSteinbergDither.php");
 
 
     $sourceImage = $_GET["sourceImage"];
@@ -58,8 +59,8 @@
 
 
     $imagick->scaleImage(384, 0, false);
-  $width = $imagick->getImageWidth();
-  $height = $imagick->getImageHeight();
+    $width = $imagick->getImageWidth();
+    $height = $imagick->getImageHeight();
 
 
    // $imagick->autoLevelImage();
@@ -89,18 +90,17 @@
 
 
 
-
-      if($ditherMode == "FloydSteinberg,2") {
+      if($ditherMode == "FloydSteinberg") {
+        $imagick = FloydSteinbergDither($imagick);
+      } else if($ditherMode == "Quantize") {
           $imagick->quantizeImage(2, imagick::COLORSPACE_GRAY, 2, false, false);
-
-      } else if($ditherMode == "Atkison,2") {
+      } else if($ditherMode == "Atkison") {
          $imagick = AtkinsonDither($imagick);
-
       }else {
            if(Imagick::getVersion()['versionNumber'] < 1800)
-           $imagick->OrderedPosterizeImage ($ditherMode);
+           $imagick->OrderedPosterizeImage ($ditherMode.",2");
             else 
-          $imagick->orderedDitherImage($ditherMode);
+          $imagick->orderedDitherImage($ditherMode.",2");
       }
 
       return $imagick;

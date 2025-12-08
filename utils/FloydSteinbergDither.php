@@ -1,34 +1,27 @@
 <?php
 
 
-function AtkinsonDither($imagick)
+function FloydSteinbergDither($imagick)
 {
   $width = $imagick->getImageWidth();
   $height = $imagick->getImageHeight();
 	$dither = clone $imagick;
 
-	/* Atkinson Error Diffusion Kernel:
+	/* Floyd-Steinberg Error Diffusion Kernel:
 
-	1/8 is 1/8 * quantization error.
+	The current pixel distributes quantization error to neighboring pixels:
 
-	+-------+-------+-------+-------+
-	|       | Curr. |  1/8  |  1/8  |
-	+-------|-------|-------|-------|
-	|  1/8  |  1/8  |  1/8  |       |
-	+-------|-------|-------|-------|
-	|       |  1/8  |       |       |
-	+-------+-------+-------+-------+
-
-	Floyd-Steinberg
-
-	+-- -----+----- --+--- --+
+	+--------+-------+-------+
 	|        | Curr. |  7/16 |
-	+---- ---|-------|-------|
+	+--------|-------|-------|
 	|  3/16  |  5/16 |  1/16 |
-	+----- --|-------|-------|
-	|        |  0    |       |
-	+-- -----+-------+-------+
+	+--------|-------|-------|
 
+	Error is distributed to:
+	- Right pixel:  7/16 of error
+	- Bottom-left:  3/16 of error
+	- Bottom:       5/16 of error
+	- Bottom-right: 1/16 of error
 	*/
 
 	// Export all pixels at once (MUCH faster than getImagePixelColor per pixel)
@@ -44,13 +37,15 @@ function AtkinsonDither($imagick)
 	// Prepare output pixel array
 	$output_pixels = array_fill(0, $totalPixels, 0);
 
-	// Pre-calculate constants
-	$error_factor = 0.125; // 1/8
+	// Pre-calculate Floyd-Steinberg error distribution factors
+	$error_right = 7.0 / 16.0;
+	$error_bottom_left = 3.0 / 16.0;
+	$error_bottom = 5.0 / 16.0;
+	$error_bottom_right = 1.0 / 16.0;
 
     for ($y = 0; $y < $height; $y++) {
         $rowOffset = $y * $width;
         $nextRowOffset = $rowOffset + $width;
-        $nextNextRowOffset = $nextRowOffset + $width;
 
         for ($x = 0; $x < $width; $x++) {
             $idx = $rowOffset + $x;
@@ -60,27 +55,29 @@ function AtkinsonDither($imagick)
             // Store the quantized pixel (0 = black, 255 = white)
             $output_pixels[$idx] = $new * 255;
 
-            // Calculate error once
-            $error_diffusion = $error_factor * ($old - $new);
+            // Calculate quantization error
+            $error = $old - $new;
 
-            // Apply error diffusion to neighboring pixels using flat array indices
+            // Distribute error to neighboring pixels according to Floyd-Steinberg kernel
+            // Right: 7/16
             if ($x + 1 < $width) {
-               $img_arr[$idx + 1] += $error_diffusion;
+               $img_arr[$idx + 1] += $error * $error_right;
             }
-            if ($x + 2 < $width) {
-		        $img_arr[$idx + 2] += $error_diffusion;
-            }
+
+            // Next row pixels (if not on last row)
             if ($y + 1 < $height) {
+                // Bottom-left: 3/16
                 if ($x - 1 >= 0) {
-		            $img_arr[$nextRowOffset + $x - 1] += $error_diffusion;
+		            $img_arr[$nextRowOffset + $x - 1] += $error * $error_bottom_left;
                 }
-		        $img_arr[$nextRowOffset + $x] += $error_diffusion;
+
+                // Bottom: 5/16
+		        $img_arr[$nextRowOffset + $x] += $error * $error_bottom;
+
+                // Bottom-right: 1/16
                 if ($x + 1 < $width) {
-		            $img_arr[$nextRowOffset + $x + 1] += $error_diffusion;
+		            $img_arr[$nextRowOffset + $x + 1] += $error * $error_bottom_right;
                 }
-            }
-            if ($y + 2 < $height) {
-		        $img_arr[$nextNextRowOffset + $x] += $error_diffusion;
             }
         }
     }

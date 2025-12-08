@@ -84,7 +84,7 @@ $config['base_url'] = 'http://localhost/phototicket/';
            <label for="ditherMode">Dither Mode</label>
            <select name="ditherMode" id="ditherMode" onChange="rangeSlideChange(null,null)">
             <?php
-                   $list = array("Atkison", "FloydSteinberg", "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
+                   $list = array("Quantize", "Atkison", "FloydSteinberg", "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
                    foreach($list as $l) {
                       echo '<option value="'.$l.'">'.$l.'</option>';
                    }
@@ -127,7 +127,7 @@ $config['base_url'] = 'http://localhost/phototicket/';
               "auto=" +  document.querySelector('#autoadjust').checked + "&" +
               "brightness=" + document.querySelector('#brightness').value + "&" +
               "contrast=" + document.querySelector('#contrast').value + "&" +
-              "ditherMode=" + document.querySelector('#ditherMode').value + ",2";
+              "ditherMode=" + document.querySelector('#ditherMode').value;
 
 console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
 
