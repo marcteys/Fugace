@@ -14,7 +14,7 @@ foreach ($_FILES as $key )
       $file_ext =  pathinfo($name, PATHINFO_EXTENSION);
       if(in_array(strtolower($file_ext), $filetype))
       {
-        if($key['name']<1000000)
+        if($key['size']<10000000)
         {
 
          @move_uploaded_file($key['tmp_name'],$path);

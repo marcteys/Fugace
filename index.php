@@ -37,8 +37,6 @@ $config['base_url'] = 'http://localhost/phototicket/';
       <input type="hidden" id="filecount" value='0'>
   </div>
 
-
-
     <div class="rCol"> 
       <div id="overlay" style="opacity:0">
         <span class="loader"><span class="loader-inner"></span></span>
@@ -57,9 +55,6 @@ $config['base_url'] = 'http://localhost/phototicket/';
           <label for="autoadjust">Auto Adjsut</label>
         </div>
     </div>
-
-
-
 
     <div class="rCol" style="clear:both;">
       <div class="slider">
@@ -92,14 +87,7 @@ $config['base_url'] = 'http://localhost/phototicket/';
         </select>
       </div>
 
-
-
-
-
-
-
     </div>
-
 
 </div>
 
@@ -162,8 +150,7 @@ function getFile(){
      document.getElementById("file").click();
 }
 
-
-	var lastImageDiv = null;
+var lastImageDiv = null;
 
 
 function submitForm() {
