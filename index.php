@@ -1,4 +1,60 @@
 <?php
+// Detect POST request with image from ESP32-CAM
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imageFile'])) {
+    require_once("utils/ImageToText.php");
+    require_once("utils/DitherImage.php");
+
+    // Extract dither parameters from POST (or use defaults)
+    $ditherMode = $_POST['ditherMode'] ?? 'Atkison';
+    $auto = isset($_POST['auto']) ? ($_POST['auto'] === 'true') : true;
+    $gamma = floatval($_POST['gamma'] ?? 1.0);
+    $brightness = floatval($_POST['brightness'] ?? 0);
+    $contrast = floatval($_POST['contrast'] ?? 0);
+
+    // Save uploaded image with timestamp
+    $timestamp = time();
+    $originalPath = "images/" . $timestamp . "-esp32.jpg";
+
+    if (!move_uploaded_file($_FILES['imageFile']['tmp_name'], $originalPath)) {
+        header('HTTP/1.1 500 Internal Server Error');
+        die("Error: Failed to save uploaded file to " . $originalPath);
+    }
+
+    // Process image using existing DitherImage function
+    try {
+        $processedImage = DitherImage($originalPath, $auto, $gamma, $brightness, $contrast, $ditherMode);
+    } catch (Exception $e) {
+        header('HTTP/1.1 500 Internal Server Error');
+        die("Error processing image: " . $e->getMessage());
+    }
+
+    // Save processed image for debugging
+    $processedImage->setImageFormat('jpg');
+    $processedImageBlob = $processedImage->getImageBlob();
+
+    if (file_put_contents("images/last.jpg", $processedImageBlob) === false) {
+        header('HTTP/1.1 500 Internal Server Error');
+        die("Error: Failed to save processed image to images/last.jpg");
+    }
+
+    // Convert to hex bitmap
+    $hexBitmap = DitherImageToString("images/last.jpg");
+
+    // Save hex bitmap for debugging
+    file_put_contents("phototicket.txt", $hexBitmap);
+
+    // Get image dimensions for height header (reuse the already loaded processedImage)
+    $height = $processedImage->getImageHeight();
+
+    // Return plain text hex with height header
+    header('Content-Type: text/plain');
+    header('X-Image-Height: ' . $height);
+    header('Content-Length: ' . strlen($hexBitmap));
+    echo $hexBitmap;
+    exit();
+}
+
+// If not POST, display manual UI as normal
 $config['base_url'] = 'http://localhost/phototicket/';
 ?>
 <!DOCTYPE html>
@@ -85,6 +141,14 @@ $config['base_url'] = 'http://localhost/phototicket/';
                    }
                   ?>
         </select>
+      </div>
+
+      <hr>
+
+      <div class="rCol" style="clear:both; margin-top: 20px;">
+        <a href="test.php" class="custom-file-upload" style="text-decoration: none; color: black;">
+          Test ESP32-CAM API
+        </a>
       </div>
 
     </div>
