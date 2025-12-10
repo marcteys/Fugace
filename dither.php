@@ -1,57 +1,68 @@
 <?php
 
+// Always load required utilities
+require_once("utils/ImageToText.php");
+require_once("utils/AtkinsonDither.php");
+require_once("utils/FloydSteinbergDither.php");
 
-  if(
-    !isset($_GET["sourceImage"]) &&
-    !isset($_GET["auto"]) &&
-    !isset($_GET["gamma"]) &&
-    !isset($_GET["brightness"]) &&
-    !isset($_GET["ditherMode"]) &&
-    !isset($_GET["contrast"])
-  ) {
+// Only execute this block if accessed directly (not included)
+if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
 
-    echo $_GET["sourceImage"] . "<br>";
-    echo $_GET["auto"] . "<br>";
-    echo $_GET["gamma"] . "<br>";
-    echo $_GET["brightness"] . "<br>";
-    echo $_GET["ditherMode"] . "<br>";
-    echo $_GET["contrast"] . "<br>";
+    if(
+        !isset($_GET["sourceImage"]) ||
+        !isset($_GET["auto"]) ||
+        !isset($_GET["gamma"]) ||
+        !isset($_GET["brightness"]) ||
+        !isset($_GET["ditherMode"]) ||
+        !isset($_GET["contrast"])
+    ) {
+        // Debug output for missing parameters
+        echo "Missing parameters:<br>";
+        echo "sourceImage: " . (isset($_GET["sourceImage"]) ? $_GET["sourceImage"] : "MISSING") . "<br>";
+        echo "auto: " . (isset($_GET["auto"]) ? $_GET["auto"] : "MISSING") . "<br>";
+        echo "gamma: " . (isset($_GET["gamma"]) ? $_GET["gamma"] : "MISSING") . "<br>";
+        echo "brightness: " . (isset($_GET["brightness"]) ? $_GET["brightness"] : "MISSING") . "<br>";
+        echo "ditherMode: " . (isset($_GET["ditherMode"]) ? $_GET["ditherMode"] : "MISSING") . "<br>";
+        echo "contrast: " . (isset($_GET["contrast"]) ? $_GET["contrast"] : "MISSING") . "<br>";
+    } else {
+        $sourceImage = $_GET["sourceImage"];
+        $gamma = $_GET["gamma"];
+        $auto = $_GET["auto"] == "true" ? true:false;
+        $brightness = $_GET["brightness"];
+        $ditherMode = $_GET["ditherMode"];
+        $contrast = $_GET["contrast"];
 
-  } else {
-        require_once("utils/ImageToText.php");
-        require_once("utils/AtkinsonDither.php");
-        require_once("utils/FloydSteinbergDither.php");
+        $image = DitherImage($sourceImage,$auto, floatval($gamma), floatval($brightness), floatval($contrast), $ditherMode);
 
+        /* Set the format to BMP3 with 1-bit depth (black and white only) */
 
-    $sourceImage = $_GET["sourceImage"];
-    $gamma = $_GET["gamma"];
-    $auto = $_GET["auto"] == "true" ? true:false;
-    $brightness = $_GET["brightness"];
-    $ditherMode = $_GET["ditherMode"];
-    $contrast = $_GET["contrast"];
+        $image->setImageFormat('bmp3');
+        
+        $image->setImageType(Imagick::IMGTYPE_PALETTE);
+        $image->setImageDepth(4);
+        $image->stripImage();
 
-    $image = DitherImage($sourceImage,$auto, floatval($gamma), floatval($brightness), floatval($contrast), $ditherMode);
+        file_put_contents ("images/last.bmp", $image);
+        $text = DitherImageToString("images/last.bmp");
+        file_put_contents ("phototicket.txt", $text);
 
-    /* Set the format to PNG */
-    $image->setImageFormat('jpg');
+        echo '<img src="images/last.bmp" alt="" />';
 
-    file_put_contents ("images/last.jpg", $image);
-    $text = DitherImageToString("images/last.jpg");
-    file_put_contents ("phototicket.txt", $text);
-
-    echo '<img src="data:image/jpg;base64,'.base64_encode($image->getImageBlob()).'" alt="" />'; 
-
-      /* Notice writeImages instead of writeImage */
-    // echo '<img src="data:image/jpg;base64,'.base64_encode($imagick->getImageBlob()).'" alt="" />';
-
-  }
+        /* Notice writeImages instead of writeImage */
+        // echo '<img src="data:image/jpg;base64,'.base64_encode($imagick->getImageBlob()).'" alt="" />';
+    }
+}
 
 
 
 	function DitherImage($sourceImage,$auto, $gamma, $brightness, $contrast, $ditherMode) {
 
-    $path = $sourceImage;
-    $imagick = new \Imagick(realpath($path));
+        $path = __DIR__ . '/' . $sourceImage;
+    if (!file_exists($path)) {
+        throw new Exception("Image file not found: " . $sourceImage);
+    }
+
+    $imagick = new \Imagick($path);
    // $deskewImagick = clone $imagick;
   $imagick->setImageBackgroundColor('white'); 
     // crop bottom "BNF "

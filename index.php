@@ -135,7 +135,7 @@ $config['base_url'] = 'http://localhost/phototicket/';
            <label for="ditherMode">Dither Mode</label>
            <select name="ditherMode" id="ditherMode" onChange="rangeSlideChange(null,null)">
             <?php
-                   $list = array("Quantize", "Atkison", "FloydSteinberg", "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
+                   $list = array("Atkison", "Quantize", "FloydSteinberg", "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
                    foreach($list as $l) {
                       echo '<option value="'.$l.'">'.$l.'</option>';
                    }
@@ -146,15 +146,14 @@ $config['base_url'] = 'http://localhost/phototicket/';
       <hr>
 
       <div class="rCol" style="clear:both; margin-top: 20px;">
-        <a href="test.php" class="custom-file-upload" style="text-decoration: none; color: black;">
-          Test ESP32-CAM API
-        </a>
+<div style="text-align: center; margin-bottom: 20px;">
+        <a href="test.php" style="color: black; font-size: 18px; text-decoration: underline;">Test ESP32-CAM API →</a>
+    </div>
       </div>
 
     </div>
 
 </div>
-
 
 <script>
 
@@ -174,7 +173,7 @@ $config['base_url'] = 'http://localhost/phototicket/';
 
   sourceImage = document.querySelector('.image_uploaded').dataset.url;
 
-  var data  = "sourceImage="+document.querySelector('.image_uploaded').dataset.url + "&" +
+  var data  = "sourceImage="+encodeURIComponent(document.querySelector('.image_uploaded').dataset.url) + "&" +
               "gamma=" +  document.querySelector('#gamma').value + "&" +
               "auto=" +  document.querySelector('#autoadjust').checked + "&" +
               "brightness=" + document.querySelector('#brightness').value + "&" +
