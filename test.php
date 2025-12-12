@@ -29,16 +29,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_upload'])) {
                 // Process image using dither function
                 $image = DitherImage($tempImagePath, $auto == 'true', floatval($gamma), floatval($brightness), floatval($contrast), $ditherMode);
 
-                // Save as BMP3 with 1-bit depth
-                $image->setImageFormat('bmp3');
-                $image->quantizeImage(2, Imagick::COLORSPACE_RGB, 0, true, false);
-                $image->setImageType(Imagick::IMGTYPE_PALETTE);
-                $image->setImageDepth(4);
-                $image->stripImage();
-
-                file_put_contents("images/last.bmp", $image);
-                $text = DitherImageToString("images/last.bmp");
-                file_put_contents("phototicket.txt", $text);
 
                 $endTime = microtime(true);
                 $processingTime = round(($endTime - $startTime) * 1000, 2);

@@ -36,15 +36,6 @@ if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
 
         /* Set the format to BMP3 with 1-bit depth (black and white only) */
 
-        $image->setImageFormat('bmp3');
-        
-        $image->setImageType(Imagick::IMGTYPE_PALETTE);
-        $image->setImageDepth(4);
-        $image->stripImage();
-
-        file_put_contents ("images/last.bmp", $image);
-        $text = DitherImageToString("images/last.bmp");
-        file_put_contents ("phototicket.txt", $text);
 
         echo '<img src="images/last.bmp" alt="" />';
 
@@ -57,64 +48,68 @@ if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
 
 	function DitherImage($sourceImage,$auto, $gamma, $brightness, $contrast, $ditherMode) {
 
-        $path = __DIR__ . '/' . $sourceImage;
+    $path = __DIR__ . '/' . $sourceImage;
     if (!file_exists($path)) {
         throw new Exception("Image file not found: " . $sourceImage);
     }
 
     $imagick = new \Imagick($path);
-   // $deskewImagick = clone $imagick;
-  $imagick->setImageBackgroundColor('white'); 
+    // $deskewImagick = clone $imagick;
+    $imagick->setImageBackgroundColor('white'); 
     // crop bottom "BNF "
-  //$imagick->whiteBalanceImage();
-
+    //$imagick->whiteBalanceImage();
 
     $imagick->scaleImage(384, 0, false);
     $width = $imagick->getImageWidth();
     $height = $imagick->getImageHeight();
 
-
-   // $imagick->autoLevelImage();
-      //-200 200 // -100 -100
-   // $imagick->brightnessContrastImage(5, 10);
+    // $imagick->autoLevelImage();
+    //-200 200 // -100 -100
+    // $imagick->brightnessContrastImage(5, 10);
 
     // Resize
     //Resolution: 203 DPI (8 points / mm, 384 points per line)
-   // $targetRatio = $imagick->getImageWidth() / 384 ;
+    // $targetRatio = $imagick->getImageWidth() / 384 ;
 
     // todo : round to nearest 8 bits multi^le in height
 
     // Dither
-      $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALEMATTE);
-    //  $imagick = $imagick->fxImage('intensity');
+    $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALEMATTE);
+  //  $imagick = $imagick->fxImage('intensity');
 
-      if($auto) {
-        $imagick->normalizeImage();
-        $imagick->autoLevelImage();
-        $imagick->gammaImage(1.7, Imagick::CHANNEL_DEFAULT);
-        $imagick->brightnessContrastImage(25, -15);
+    if($auto) {
+      $imagick->normalizeImage();
+      $imagick->autoLevelImage();
+      $imagick->gammaImage(1.7, Imagick::CHANNEL_DEFAULT);
+      $imagick->brightnessContrastImage(25, -15);
+    } else {
+      $imagick->gammaImage($gamma, Imagick::CHANNEL_DEFAULT);
+      $imagick->brightnessContrastImage($brightness, $contrast);
+    }
 
-        } else {
-          $imagick->gammaImage($gamma, Imagick::CHANNEL_DEFAULT);
-          $imagick->brightnessContrastImage($brightness, $contrast);
-        }
+    if($ditherMode == "FloydSteinberg") {
+      $imagick = FloydSteinbergDither($imagick);
+    } else if($ditherMode == "Quantize") {
+        $imagick->quantizeImage(2, imagick::COLORSPACE_GRAY, 2, false, false);
+    } else if($ditherMode == "Atkison") {
+        $imagick = AtkinsonDither($imagick);
+    }else {
+        if(Imagick::getVersion()['versionNumber'] < 1800)
+          $imagick->OrderedPosterizeImage ($ditherMode.",2");
+        else 
+      $imagick->orderedDitherImage($ditherMode.",2");
+    }
 
+    // Save as BMP3 with 1-bit depth
+    $imagick->setImageFormat('bmp3');
+    $imagick->quantizeImage(2, Imagick::COLORSPACE_RGB, 0, true, false);
+    $imagick->setImageType(Imagick::IMGTYPE_PALETTE);
+    $imagick->setImageDepth(4);
+    $imagick->stripImage();
 
+    file_put_contents ("images/last.bmp", $imagick);
 
-      if($ditherMode == "FloydSteinberg") {
-        $imagick = FloydSteinbergDither($imagick);
-      } else if($ditherMode == "Quantize") {
-          $imagick->quantizeImage(2, imagick::COLORSPACE_GRAY, 2, false, false);
-      } else if($ditherMode == "Atkison") {
-         $imagick = AtkinsonDither($imagick);
-      }else {
-           if(Imagick::getVersion()['versionNumber'] < 1800)
-           $imagick->OrderedPosterizeImage ($ditherMode.",2");
-            else 
-          $imagick->orderedDitherImage($ditherMode.",2");
-      }
-
-      return $imagick;
+    return $imagick;
     /**
      *    Threshold Maps for Ordered Dither Operations
 
@@ -147,13 +142,6 @@ if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
     hlines2x2a                    Horizontal Lines 2x2 (bounds adjusted)
     hlines6x4                     Horizontal Lines 6x4
     hlines12x4       hlines       Horizontal Lines 12x4*/
-
-
-      //  $imagick->remapImage($palette, Imagick::DITHERMETHOD_RIEMERSMA);
-    //$imagick->setImageType(imagick::IMGTYPE_COLORSEPARATION);
-      //  $imagick->posterizeimage(2, Imagick::DITHERMETHOD_FLOYDSTEINBERG);
-
-
 	}
 
 

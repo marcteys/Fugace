@@ -28,29 +28,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imageFile'])) {
         die("Error processing image: " . $e->getMessage());
     }
 
-    // Save processed image for debugging
-    $processedImage->setImageFormat('jpg');
-    $processedImageBlob = $processedImage->getImageBlob();
+    header('Content-Type: image/bmp');
+    header('Content-Length: ' . strlen($processedImage));
+    echo $processedImage;
 
-    if (file_put_contents("images/last.jpg", $processedImageBlob) === false) {
-        header('HTTP/1.1 500 Internal Server Error');
-        die("Error: Failed to save processed image to images/last.jpg");
-    }
-
-    // Convert to hex bitmap
-    $hexBitmap = DitherImageToString("images/last.jpg");
-
-    // Save hex bitmap for debugging
-    file_put_contents("phototicket.txt", $hexBitmap);
-
-    // Get image dimensions for height header (reuse the already loaded processedImage)
-    $height = $processedImage->getImageHeight();
-
-    // Return plain text hex with height header
-    header('Content-Type: text/plain');
-    header('X-Image-Height: ' . $height);
-    header('Content-Length: ' . strlen($hexBitmap));
-    echo $hexBitmap;
+    
     exit();
 }
 
