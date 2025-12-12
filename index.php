@@ -229,7 +229,7 @@ function submitForm() {
      var size  =  $('#file')[0].files[0].size;
 
     var ext =  imgname.substr( (imgname.lastIndexOf('.') +1) );
-    if(ext=='jpg' || ext=='jpeg' || ext=='png' || ext=='gif' || ext=='PNG' || ext=='JPG' || ext=='JPEG')
+    if(ext=='jpg' || ext=='jpeg' || ext=='png' || ext=='gif' || ext=='PNG' || ext=='JPG' || ext=='bmp' || ext=='BMP'  || ext=='JPEG')
     {
      if(size<=10000000)
      {

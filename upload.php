@@ -3,7 +3,7 @@
 // https://stackoverflow.com/questions/19447435/ajax-upload-image
 
 
-$filetype = array('jpeg','jpg','png','gif','PNG','JPEG','JPG');
+$filetype = array('jpeg','jpg','png','gif','PNG','JPEG','JPG', 'bmp','BMP');
 
 foreach ($_FILES as $key )
     {
