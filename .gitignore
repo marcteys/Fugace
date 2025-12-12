@@ -1,1 +1,4 @@
 images/
+
+# Firmware secrets
+**/secrets.h

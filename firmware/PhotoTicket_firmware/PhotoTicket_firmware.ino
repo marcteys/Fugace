@@ -20,19 +20,12 @@
 #include <WiFiClientSecure.h>
 
 #include "TPrinter.h"
-
-// WiFi Configuration
-const char* ssid = "BIBOULAND_EXT";      // Replace with your WiFi SSID
-const char* password = "lemotdepasse";  // Replace with your WiFi password
-
-// Image URL
-const char* imageUrl = "https://marcteyssier.com/experiment/PhotoTicket/images/last.bmp";
+#include "secrets.h"
 
 // Printer Configuration
 const byte rxPin = 16;
 const byte txPin = 17;
 const byte dtrPin = 14;  // optional
-const byte rsePin = 4;   // direction of transmission, max3485
 
 HardwareSerial mySerial(2);
 Tprinter myPrinter(&mySerial, 9600);
@@ -323,14 +316,10 @@ void setup() {
   Serial.println("================================\n");
 
   // Initialize printer
-  micros();
   mySerial.begin(9600, SERIAL_8N1, rxPin, txPin);
 
-  pinMode(rsePin, OUTPUT);     // optional
-  digitalWrite(rsePin, HIGH);  // optional
-
   // Uncomment to enable DTR pin
-   myPrinter.enableDtr(dtrPin, LOW);
+  myPrinter.enableDtr(dtrPin, LOW);
 
   myPrinter.begin();
   myPrinter.setHeat(1, 224, 40);
