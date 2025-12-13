@@ -1,295 +1,240 @@
-<?php
-// Detect POST request with image from ESP32-CAM
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imageFile'])) {
-    // Log incoming POST data
-    $logFile = 'post_log.txt';
-    $logData = [
-        'timestamp' => date('Y-m-d H:i:s'),
-        'POST' => $_POST,
-        'FILES' => array_map(function($file) {
-            return [
-                'name' => $file['name'],
-                'type' => $file['type'],
-                'size' => $file['size'],
-                'tmp_name' => $file['tmp_name'],
-                'error' => $file['error']
-            ];
-        }, $_FILES)
-    ];
-    file_put_contents($logFile, print_r($logData, true) . "\n" . str_repeat('=', 80) . "\n", FILE_APPEND);
-
-  //  require_once("utils/ImageToText.php");
-    require_once("utils/DitherImage.php");
-
-    // Extract dither parameters from POST (or use defaults)
-    $ditherMode = isset($_POST['ditherMode']) ? $_POST['ditherMode'] :  'Atkison';
-    $auto = isset($_POST['auto']) ? ($_POST['auto'] === 'true') : true;
-    $gamma = isset($_POST['gamma']) ? floatval($_POST['gamma']) : 1;
-    $brightness = isset($_POST['brightness']) ? floatval($_POST['brightness']) : 0 ;
-    $contrast = isset($_POST['brightness']) ? floatval($_POST['contrast']) : 0;
-
-    // Save uploaded image with timestamp
-    $timestamp = time();
-    $originalPath = "images/" . $timestamp . "-image.jpg";
-
-    if (!move_uploaded_file($_FILES['imageFile']['tmp_name'], $originalPath)) {
-        header('HTTP/1.1 500 Internal Server Error');
-        die("Error: Failed to save uploaded file to " . $originalPath);
-    }
-
-    // Process image using existing DitherImage function
-    try {
-        $processedImage = DitherImage($originalPath, $auto, $gamma, $brightness, $contrast, $ditherMode);
-      } catch (Exception $e) {
-        header('HTTP/1.1 500 Internal Server Error');
-        die("Error processing image: " . $e->getMessage());
-    }
-
-    header('Content-Type: image/bmp');
-    header('Content-Length: ' . strlen($processedImage));
-    echo $processedImage;
-
-    
-    exit();
-}
-
-// If not POST, display manual UI as normal
-$config['base_url'] = "http://localhost/fugace/"
-
-?>
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Ticket</title>
-	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-	<link rel="stylesheet" type="text/css" href="style.css">
-	 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"> 
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css"
-  type="text/css"
-/>
-
-<script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
-
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ESP32-CAM API Tester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="style.css">
 </head>
-<body>
-
-
-<div class="ticket">
-  <div class="ticket__content">
-    <h1>Photo Ticket</h1>
-
-   <div class="rCol" style="clear:both;">
-
-    <label for="file-upload" class="custom-file-upload" onclick="getFile()">
-       Upload New Photo
-  </label>
-      <input id="file" type="file"  onChange=" return submitForm();"/>
-      <input type="hidden" id="filecount" value='0'>
-  </div>
-
-    <div class="rCol"> 
-      <div id="overlay" style="opacity:0">
-        <span class="loader"><span class="loader-inner"></span></span>
-      </div>
-
-     <div id ="prv" style="height:auto; width:auto; float:left; margin-bottom: 5px">
-     </div>
+<body class="test-page">
+    <h1>Fugace~</h1>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <p style="color: #666;">Upload an image and adjust settings for real-time preview</p>
     </div>
 
+    <div class="container">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="split-layout">
+                <!-- LEFT PANEL: Upload & Controls -->
+                <div class="left-panel">
+                    <h2>Upload & Settings</h2>
 
-      <hr>
+                    <label for="testImage">Select Image:</label>
+                    <label for="testImage" class="custom-file-upload">
+                        Choose File
+                    </label>
+                    <input type="file" id="testImage" name="testImage" accept="image/*" required>
 
-    <div class="rCol" style="clear:both;">
-         <div class="slider">
-          <input type="checkbox" onChange="rangeSlideChange(null,null)" id="autoadjust" name="autoadjust" />
-          <label for="autoadjust">Auto Adjsut</label>
-        </div>
+                    <label for="ditherMode">Dither Mode:</label>
+                    <select id="ditherMode" name="ditherMode">
+                        <option value="Atkison" selected>Atkison</option>
+                        <option value="FloydSteinberg">Floyd-Steinberg</option>
+                        <option value="Quantize">Quantize</option>
+                        <option value="o2x2">Ordered 2x2</option>
+                        <option value="o3x3">Ordered 3x3</option>
+                        <option value="o4x4">Ordered 4x4</option>
+                        <option value="o8x8">Ordered 8x8</option>
+                        <option value="h4x4a">Halftone 4x4a</option>
+                        <option value="h6x6a">Halftone 6x6a</option>
+                        <option value="h8x8a">Halftone 8x8a</option>
+                        <option value="h4x4o">Halftone 4x4o</option>
+                        <option value="h6x6o">Halftone 6x6o</option>
+                        <option value="h8x8o">Halftone 8x8o</option>
+                        <option value="h16x16o">Halftone 16x16o</option>
+                        <option value="c5x5b">Circles 5x5 Black</option>
+                        <option value="c5x5w">Circles 5x5 White</option>
+                        <option value="c6x6b">Circles 6x6 Black</option>
+                        <option value="c6x6w">Circles 6x6 White</option>
+                        <option value="c7x7b">Circles 7x7 Black</option>
+                        <option value="c7x7w">Circles 7x7 White</option>
+                    </select>
+
+                    <div class="checkbox-label">
+                        <input type="checkbox" name="auto" value="true" checked>
+                        Auto Adjust
+                    </div>
+
+                    <hr>
+
+                    <div class="slider">
+                        <label for="gamma">Gamma</label>
+                        <input type="range" id="gamma" name="gamma" min="0.01" max="10.0" value="1.0" step="0.01"
+                               oninput="document.getElementById('gammaValue').textContent = this.value">
+                        <span class="value" id="gammaValue">1.0</span>
+                    </div>
+
+                    <div class="slider">
+                        <label for="brightness">Brightness</label>
+                        <input type="range" id="brightness" name="brightness" min="-200" max="200" value="0" step="1"
+                               oninput="document.getElementById('brightnessValue').textContent = this.value">
+                        <span class="value" id="brightnessValue">0</span>
+                    </div>
+
+                    <div class="slider">
+                        <label for="contrast">Contrast</label>
+                        <input type="range" id="contrast" name="contrast" min="-100" max="100" value="0" step="1"
+                               oninput="document.getElementById('contrastValue').textContent = this.value">
+                        <span class="value" id="contrastValue">0</span>
+                    </div>
+
+                    <button type="submit" name="test_upload">Send Test Request</button>
+                </div>
+
+                <!-- RIGHT PANEL: Preview & Results -->
+                <div class="right-panel">
+                    <h2>Preview</h2>
+                    <p style="color: #666; margin-top: 20px;">Upload an image to see the dithered result here.</p>
+                    <p style="color: #999; margin-top: 10px; font-size: 14px;">Adjust the sliders on the left for real-time re-processing.</p>
+                </div>
+
+            </div>
+        </form>
     </div>
 
-    <div class="rCol" style="clear:both;">
-      <div class="slider">
-        <label for="gamma">Gamma</label>
-          <input type="range" id="gamma" name="gamma" min="0.01" max="10.0"  value="1" step="0.01" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-            <p class="text">1</p>
-      </div>
+    <script>
+    let lastUploadedFilename = null;
+    let lastSelectedFile = null;
 
-      <div class="slider">
-        <label for="brightness">Brightness</label>
-        <input type="range" id="brightness" name="brightness" min="-200" max="200" value="0" step="0.5" onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-        <p class="text">0</p>
-      </div>
-
-      <div class="slider">
-           <label for="contrast">Contrast</label>
-        <input type="range" id="contrast" name="contrast" min="-100" max="100" value="0" step="0.5"  onChange="rangeSlideChange(this, this.value)" onmousemove="rangeSlide(this, this.value)" />
-        <p class="text">0</p>
-      </div>
-      <hr>
-      <div class="slider">
-           <label for="ditherMode">Dither Mode</label>
-           <select name="ditherMode" id="ditherMode" onChange="rangeSlideChange(null,null)">
-            <?php
-                   $list = array("Atkison", "Quantize", "FloydSteinberg", "o2x2", "o3x3", "o4x4", "o8x8", "h4x4a", "h6x6a", "h8x8a", "h4x4o", "h6x6o", "h8x8o", "h16x16o", "c5x5b", "c5x5w", "c6x6b", "c6x6w", "c7x7b", "c7x7w" );
-                   foreach($list as $l) {
-                      echo '<option value="'.$l.'">'.$l.'</option>';
-                   }
-                  ?>
-        </select>
-      </div>
-
-      <hr>
-
-      <div class="rCol" style="clear:both; margin-top: 20px;">
-<div style="text-align: center; margin-bottom: 20px;">
-        <a href="test.php" style="color: black; font-size: 18px; text-decoration: underline;">Test ESP32-CAM API →</a>
-    </div>
-      </div>
-
-    </div>
-
-</div>
-
-<script>
-
-
-  const mainContentDiv = document.querySelector("#prv");
-  const overlay = document.querySelector("#overlay");
-  overlay.style.opacity = 0;
-
- function rangeSlide(div, value) {
-    textDiv = div.parentElement.querySelector('.text').innerHTML = value;
- }
-
- function rangeSlideChange(div, value) {
-  if(div != null)  rangeSlide(div,value);
-
-  if(document.querySelector('.image_uploaded') == null) return;
-
-  sourceImage = document.querySelector('.image_uploaded').dataset.url;
-
-  var data  = "sourceImage="+encodeURIComponent(document.querySelector('.image_uploaded').dataset.url) + "&" +
-              "gamma=" +  document.querySelector('#gamma').value + "&" +
-              "auto=" +  document.querySelector('#autoadjust').checked + "&" +
-              "brightness=" + document.querySelector('#brightness').value + "&" +
-              "contrast=" + document.querySelector('#contrast').value + "&" +
-              "ditherMode=" + document.querySelector('#ditherMode').value;
-
-      console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
-
-     overlay.style.opacity = 1;
-
-     $.ajax({
-            url: "<?php echo $config['base_url'] ?>dither.php?"+data,
-            type: "GET",
-            headers: {
-                'Access-Control-Allow-Origin': '*'
-            },
-            crossDomain: true,
-            success: function(response) {
-               $('#prv').html("");
-               var img = '<div class="image_uploaded" data-url="'+sourceImage+'"> ' + response + '</div>';
-               $('#prv').append(img);
-               overlay.style.opacity = 0;
-            },
-            error: function(xhr, status, error) {
-              // Handle the error
-              console.log(xhr);
-              console.log(status);
-              console.log(error);
-            }
-          });
- }
-
-
-function getFile(){
-     document.getElementById("file").click();
-}
-
-var lastImageDiv = null;
-
-
-function submitForm() {
-    var fcnt = $('#filecount').val();
-    var fname = $('#filename').val();
-    var imgclean = $('#file');
-    if(fcnt<=500)
-    {
-    data = new FormData();
-    data.append('file', $('#file')[0].files[0]);
-
-    var imgname  =  $('input[type=file]').val();
-     var size  =  $('#file')[0].files[0].size;
-
-    var ext =  imgname.substr( (imgname.lastIndexOf('.') +1) );
-    if(ext=='jpg' || ext=='jpeg' || ext=='png' || ext=='gif' || ext=='PNG' || ext=='JPG' || ext=='bmp' || ext=='BMP'  || ext=='JPEG')
-    {
-     if(size<=10000000)
-     {
-    $.ajax({
-      url: "<?php echo $config['base_url'] ?>upload.php",
-      type: "POST",
-      data: data,
-      enctype: 'multipart/form-data',
-      processData: false,  // tell jQuery not to process the data
-      contentType: false   // tell jQuery not to set contentType
-    }).done(function(data) {
-
-       if(data!='FILE_SIZE_ERROR' || data!='FILE_TYPE_ERROR' )
-       {
-        $('#prv').html("");
-        fcnt = parseInt(fcnt)+1;
-        $('#filecount').val(fcnt);
-        var img = '<div class="image_uploaded" data-url="images/'+data+'" id ="img_'+fcnt+'" ><img  src="<?php echo $config['base_url'] ?>images/'+data+'"><a href="#" id="rmv_'+fcnt+'" onclick="return removeit('+fcnt+')" class="close-classic"></a></div><input type="hidden" id="name_'+fcnt+'" value="'+data+'">';
-        $('#prv').append(img);
-        overlay.style.opacity = 1;
-
-
-        rangeSlideChange(null,null);
-
-        lastImageDiv = img;
-        if(fname!=='')
-        {
-          fname = fname+','+data;
-        }else
-        {
-          fname = data;
+    // Store file reference on selection
+    document.getElementById('testImage').addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            lastSelectedFile = this.files[0];
+            console.log('File selected:', this.files[0].name);
         }
-         $('#filename').val(fname);
-          imgclean.replaceWith( imgclean = imgclean.clone( true ) );
-       }
-       else
-       {
-         imgclean.replaceWith( imgclean = imgclean.clone( true ) );
-         alert('SORRY SIZE AND TYPE ISSUE');
-       }
-
     });
-    return false;
-  }//end size
-  else
-  {
-    imgclean.replaceWith( imgclean = imgclean.clone( true ) );//Its for reset the value of file type
-    alert('Sorry File size exceeding from 1 Mb');
-  }
-  }//end FILETYPE
-  else
-  {
-     imgclean.replaceWith( imgclean = imgclean.clone( true ) );
-    alert('Sorry Only you can uplaod JPEG|JPG|PNG|GIF file type ');
-  }
-  }//end filecount
-  else
-  {    imgclean.replaceWith( imgclean = imgclean.clone( true ) );
-     alert('You Can not Upload more than 6 Photos');
-  }
-}
-</script>
 
+    // Handle form submission - initial upload
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        if (!lastSelectedFile) {
+            alert('Please select an image file');
+            return;
+        }
+
+        processImage(true); // true = initial upload
+    });
+
+    // Process or re-process image
+    function processImage(isInitialUpload = false) {
+        const formData = new FormData();
+        const rightPanel = document.querySelector('.right-panel');
+
+        if (isInitialUpload) {
+            // Mode 1: Upload new file
+            if (!lastSelectedFile) {
+                alert('Please select an image file');
+                return;
+            }
+            formData.append('imageFile', lastSelectedFile);
+        } else {
+            // Mode 2: Re-process existing file
+            if (!lastUploadedFilename) {
+                alert('Upload an image first');
+                return;
+            }
+            formData.append('sourceImage', lastUploadedFilename);
+        }
+
+        // Add processing parameters
+        formData.append('ditherMode', document.getElementById('ditherMode').value);
+        formData.append('auto', document.querySelector('input[name="auto"]').checked ? 'true' : 'false');
+        formData.append('gamma', document.getElementById('gamma').value);
+        formData.append('brightness', document.getElementById('brightness').value);
+        formData.append('contrast', document.getElementById('contrast').value);
+
+        // Show processing state
+        rightPanel.innerHTML = '<h2>Processing...</h2><p style="color: #666; margin-top: 20px;">Please wait...</p>';
+
+        const startTime = performance.now();
+
+        // Send request to upload.php
+        fetch('upload.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP error ' + response.status);
+            }
+
+            // Store filename from header on initial upload
+            if (isInitialUpload) {
+                const filename = response.headers.get('X-Uploaded-Filename');
+                if (filename) {
+                    lastUploadedFilename = filename;
+                    console.log('Saved filename for re-processing:', filename);
+                }
+            }
+
+            return response.blob();
+        })
+        .then(blob => {
+            const endTime = performance.now();
+            const processingTime = Math.round(endTime - startTime);
+
+            // Create object URL for the BMP
+            const bmpUrl = URL.createObjectURL(blob);
+
+            // Display result
+            rightPanel.innerHTML = `
+                <h2>Result</h2>
+                <div style="margin-bottom: 15px;">
+                    <div class="stat">
+                        <strong>Status:</strong> <span class="success">200</span>
+                    </div>
+                    <div class="stat">
+                        <strong>Time:</strong> ${processingTime} ms
+                    </div>
+                    <div class="stat">
+                        <strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB
+                    </div>
+                </div>
+                <h3>Preview</h3>
+                <div class="bitmap-visual">
+                    <img src="${bmpUrl}" alt="Processed image" style="max-width: 100%; border: 1px solid #ddd;">
+                </div>
+                <p style="color: #666; margin-top: 10px; font-style: italic;">Adjust sliders above to re-process in real-time</p>
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            rightPanel.innerHTML = `
+                <h2>Error</h2>
+                <div class="error">
+                    <strong>Error:</strong> ${error.message}
+                </div>
+            `;
+        });
+    }
+
+    // Real-time re-processing on slider changes (debounced)
+    let reprocessTimeout;
+    function scheduleReprocess() {
+        clearTimeout(reprocessTimeout);
+        reprocessTimeout = setTimeout(() => processImage(false), 500); // 500ms debounce
+    }
+
+    // Attach to sliders for real-time preview
+    document.getElementById('gamma').addEventListener('input', scheduleReprocess);
+    document.getElementById('brightness').addEventListener('input', scheduleReprocess);
+    document.getElementById('contrast').addEventListener('input', scheduleReprocess);
+    document.getElementById('ditherMode').addEventListener('change', () => processImage(false));
+    document.querySelector('input[name="auto"]').addEventListener('change', () => processImage(false));
+
+    // Update slider value displays
+    document.getElementById('gamma').addEventListener('input', function() {
+        document.getElementById('gammaValue').textContent = this.value;
+    });
+    document.getElementById('brightness').addEventListener('input', function() {
+        document.getElementById('brightnessValue').textContent = this.value;
+    });
+    document.getElementById('contrast').addEventListener('input', function() {
+        document.getElementById('contrastValue').textContent = this.value;
+    });
+    </script>
 </body>
 </html>
