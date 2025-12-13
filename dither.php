@@ -7,7 +7,6 @@ require_once("utils/FloydSteinbergDither.php");
 
 // Only execute this block if accessed directly (not included)
 if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
-
     if(
         !isset($_GET["sourceImage"]) ||
         !isset($_GET["auto"]) ||
@@ -37,17 +36,16 @@ if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
         /* Set the format to BMP3 with 1-bit depth (black and white only) */
 
 
-        echo '<img src="images/last.bmp" alt="" />';
+       // echo '<img src="images/last.bmp" alt="" />';
 
         /* Notice writeImages instead of writeImage */
-        // echo '<img src="data:image/jpg;base64,'.base64_encode($imagick->getImageBlob()).'" alt="" />';
+         echo '<img src="data:image/jpg;base64,'.base64_encode($image->getImageBlob()).'" alt="" />';
     }
 }
 
 
 
 	function DitherImage($sourceImage,$auto, $gamma, $brightness, $contrast, $ditherMode) {
-
     $path = __DIR__ . '/' . $sourceImage;
     if (!file_exists($path)) {
         throw new Exception("Image file not found: " . $sourceImage);
@@ -55,23 +53,40 @@ if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
 
     $imagick = new \Imagick($path);
     // $deskewImagick = clone $imagick;
-    $imagick->setImageBackgroundColor('white'); 
+    $imagick->setImageBackgroundColor('white');
     // crop bottom "BNF "
     //$imagick->whiteBalanceImage();
+
+    // Crop to 16:9 portrait aspect ratio (9:16)
+    $originalWidth = $imagick->getImageWidth();
+    $originalHeight = $imagick->getImageHeight();
+    $targetAspectRatio = 3.0 / 4.0; // Portrait 16:9
+    $currentAspectRatio = $originalWidth / $originalHeight;
+
+    if ($currentAspectRatio > $targetAspectRatio) {
+        // Image is too wide, crop width
+        $newWidth = intval($originalHeight * $targetAspectRatio);
+        $newHeight = $originalHeight;
+        $x = intval(($originalWidth - $newWidth) / 2);
+        $y = 0;
+    } else {
+        // Image is too tall, crop height
+        $newWidth = $originalWidth;
+        $newHeight = intval($originalWidth / $targetAspectRatio);
+        $x = 0;
+        $y = intval(($originalHeight - $newHeight) / 2);
+    }
+
+    $imagick->cropImage($newWidth, $newHeight, $x, $y);
+    $imagick->setImagePage(0, 0, 0, 0); // Reset image page
 
     $imagick->scaleImage(384, 0, false);
     $width = $imagick->getImageWidth();
     $height = $imagick->getImageHeight();
 
-    // $imagick->autoLevelImage();
-    //-200 200 // -100 -100
-    // $imagick->brightnessContrastImage(5, 10);
-
     // Resize
     //Resolution: 203 DPI (8 points / mm, 384 points per line)
     // $targetRatio = $imagick->getImageWidth() / 384 ;
-
-    // todo : round to nearest 8 bits multi^le in height
 
     // Dither
     $imagick->setImageType(\Imagick::IMGTYPE_GRAYSCALEMATTE);
@@ -100,12 +115,16 @@ if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
       $imagick->orderedDitherImage($ditherMode.",2");
     }
 
+    
+
+    /*
     // Save as BMP3 with 1-bit depth
     $imagick->setImageFormat('bmp3');
     $imagick->quantizeImage(2, Imagick::COLORSPACE_RGB, 0, true, false);
     $imagick->setImageType(Imagick::IMGTYPE_PALETTE);
     $imagick->setImageDepth(4);
     $imagick->stripImage();
+    */
 
     file_put_contents ("images/last.bmp", $imagick);
 

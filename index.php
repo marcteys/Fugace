@@ -1,19 +1,36 @@
 <?php
 // Detect POST request with image from ESP32-CAM
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imageFile'])) {
-    require_once("utils/ImageToText.php");
+    // Log incoming POST data
+    $logFile = 'post_log.txt';
+    $logData = [
+        'timestamp' => date('Y-m-d H:i:s'),
+        'POST' => $_POST,
+        'FILES' => array_map(function($file) {
+            return [
+                'name' => $file['name'],
+                'type' => $file['type'],
+                'size' => $file['size'],
+                'tmp_name' => $file['tmp_name'],
+                'error' => $file['error']
+            ];
+        }, $_FILES)
+    ];
+    file_put_contents($logFile, print_r($logData, true) . "\n" . str_repeat('=', 80) . "\n", FILE_APPEND);
+
+  //  require_once("utils/ImageToText.php");
     require_once("utils/DitherImage.php");
 
     // Extract dither parameters from POST (or use defaults)
-    $ditherMode = $_POST['ditherMode'] ?? 'Atkison';
+    $ditherMode = isset($_POST['ditherMode']) ? $_POST['ditherMode'] :  'Atkison';
     $auto = isset($_POST['auto']) ? ($_POST['auto'] === 'true') : true;
-    $gamma = floatval($_POST['gamma'] ?? 1.0);
-    $brightness = floatval($_POST['brightness'] ?? 0);
-    $contrast = floatval($_POST['contrast'] ?? 0);
+    $gamma = isset($_POST['gamma']) ? floatval($_POST['gamma']) : 1;
+    $brightness = isset($_POST['brightness']) ? floatval($_POST['brightness']) : 0 ;
+    $contrast = isset($_POST['brightness']) ? floatval($_POST['contrast']) : 0;
 
     // Save uploaded image with timestamp
     $timestamp = time();
-    $originalPath = "images/" . $timestamp . "-esp32.jpg";
+    $originalPath = "images/" . $timestamp . "-image.jpg";
 
     if (!move_uploaded_file($_FILES['imageFile']['tmp_name'], $originalPath)) {
         header('HTTP/1.1 500 Internal Server Error');
@@ -23,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imageFile'])) {
     // Process image using existing DitherImage function
     try {
         $processedImage = DitherImage($originalPath, $auto, $gamma, $brightness, $contrast, $ditherMode);
-    } catch (Exception $e) {
+      } catch (Exception $e) {
         header('HTTP/1.1 500 Internal Server Error');
         die("Error processing image: " . $e->getMessage());
     }
@@ -37,7 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['imageFile'])) {
 }
 
 // If not POST, display manual UI as normal
-$config['base_url'] = 'http://localhost/phototicket/';
+$config['base_url'] = "http://localhost/fugace/"
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -162,9 +180,9 @@ $config['base_url'] = 'http://localhost/phototicket/';
               "contrast=" + document.querySelector('#contrast').value + "&" +
               "ditherMode=" + document.querySelector('#ditherMode').value;
 
-console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
+      console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
 
-                    overlay.style.opacity = 1;
+     overlay.style.opacity = 1;
 
      $.ajax({
             url: "<?php echo $config['base_url'] ?>dither.php?"+data,
@@ -174,12 +192,10 @@ console.log("<?php echo $config['base_url'] ?>dither.php?"+data);
             },
             crossDomain: true,
             success: function(response) {
-            //  console.log(response);
                $('#prv').html("");
-              var img = '<div class="image_uploaded" data-url="'+sourceImage+'"> ' + response + '</div>';
-                  $('#prv').append(img);
-                    overlay.style.opacity = 0;
-
+               var img = '<div class="image_uploaded" data-url="'+sourceImage+'"> ' + response + '</div>';
+               $('#prv').append(img);
+               overlay.style.opacity = 0;
             },
             error: function(xhr, status, error) {
               // Handle the error

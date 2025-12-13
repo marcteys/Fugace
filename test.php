@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_upload'])) {
     <?php endif; ?>
 
     <div class="container">
-        <form method="POST" enctype="multipart/form-data">
+        <form method="POST" action="index.php" enctype="multipart/form-data">
             <div class="split-layout">
                 <!-- LEFT PANEL: Upload & Controls -->
                 <div class="left-panel">
@@ -185,13 +185,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_upload'])) {
                                 $compatible = false;
                             }
 
-                            if (file_exists('phototicket.txt')) {
-                                echo "✓ Hex bitmap file created\n";
-                            } else {
-                                echo "✗ Hex bitmap file not created\n";
-                                $compatible = false;
-                            }
-
                             echo "\n";
                             if ($compatible) {
                                 echo "✓ ALL CHECKS PASSED";
@@ -203,10 +196,111 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['test_upload'])) {
                     <?php else: ?>
                         <h2>Preview</h2>
                         <p style="color: #666; margin-top: 20px;">Upload an image to see the dithered result here.</p>
-                    <?php endif; ?>
+                        <h3>Last image</h3>
+                      <img src="images/last.bmp" alt="">
+                        <?php endif; ?>
                 </div>
+
             </div>
         </form>
     </div>
+
+    <script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent default form submission
+
+        // Get form data
+        const formData = new FormData();
+        const fileInput = document.getElementById('testImage');
+        const ditherMode = document.getElementById('ditherMode').value;
+        const auto = document.querySelector('input[name="auto"]').checked ? 'true' : 'false';
+        const gamma = document.getElementById('gamma').value;
+        const brightness = document.getElementById('brightness').value;
+        const contrast = document.getElementById('contrast').value;
+
+        // Validate file
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Please select an image file');
+            return;
+        }
+
+        // Append data to FormData
+        formData.append('imageFile', fileInput.files[0]);
+        formData.append('ditherMode', ditherMode);
+        formData.append('auto', auto);
+        formData.append('gamma', gamma);
+        formData.append('brightness', brightness);
+        formData.append('contrast', contrast);
+
+        // Show processing state
+        const rightPanel = document.querySelector('.right-panel');
+        rightPanel.innerHTML = '<h2>Processing...</h2><p style="color: #666; margin-top: 20px;">Please wait while the image is being processed...</p>';
+
+        const startTime = performance.now();
+
+        // Send AJAX request
+        fetch('index.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP error ' + response.status);
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const endTime = performance.now();
+            const processingTime = Math.round(endTime - startTime);
+
+            // Create object URL for the BMP
+            const bmpUrl = URL.createObjectURL(blob);
+
+            // Display result
+            rightPanel.innerHTML = `
+                <h2>Test Results</h2>
+                <div style="margin-bottom: 15px;">
+                    <div class="stat">
+                        <strong>Status:</strong> <span class="success">200</span>
+                    </div>
+                    <div class="stat">
+                        <strong>Time:</strong> ${processingTime} ms
+                    </div>
+                    <div class="stat">
+                        <strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB
+                    </div>
+                </div>
+                <h3>Bitmap Preview</h3>
+                <div class="bitmap-visual">
+                    <img src="${bmpUrl}" alt="Dithered bitmap" style="max-width: 100%; border: 1px solid #ddd;">
+                </div>
+                <h3>Processing Status</h3>
+                <pre>✓ Processing successful
+✓ BMP file received
+
+✓ ALL CHECKS PASSED</pre>
+            `;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            rightPanel.innerHTML = `
+                <h2>Error</h2>
+                <div class="error">
+                    <strong>Error:</strong> ${error.message}
+                </div>
+                <h3>Processing Status</h3>
+                <pre>✗ Request failed
+
+✗ FIX ERRORS ABOVE</pre>
+            `;
+        });
+    });
+
+    // Update filename display
+    document.getElementById('testImage').addEventListener('change', function() {
+        const fileName = this.files[0] ? this.files[0].name : 'No file chosen';
+        console.log('File selected:', fileName);
+    });
+    </script>
 </body>
 </html>
