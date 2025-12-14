@@ -115,16 +115,12 @@ if (isset($_GET["sourceImage"]) || isset($_GET["ditherMode"])) {
       $imagick->orderedDitherImage($ditherMode.",2");
     }
 
-    
-
-    /*
     // Save as BMP3 with 1-bit depth
-    $imagick->setImageFormat('bmp3');
-    $imagick->quantizeImage(2, Imagick::COLORSPACE_RGB, 0, true, false);
-    $imagick->setImageType(Imagick::IMGTYPE_PALETTE);
-    $imagick->setImageDepth(4);
+    $imagick->setImageFormat('bmp');
+  //  $imagick->quantizeImage(2, Imagick::COLORSPACE_RGB, 0, true, false);
+   $imagick->setImageType(Imagick::IMGTYPE_PALETTE);
+   // $imagick->setImageDepth(4);
     $imagick->stripImage();
-    */
 
     file_put_contents ("images/last.bmp", $imagick);
 
