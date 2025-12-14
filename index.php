@@ -10,7 +10,7 @@
     <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body class="test-page">
-    <h1>Fugace~</h1>
+    <h1>Fugace</h1>
     <div style="text-align: center; margin-bottom: 20px;">
         <p style="color: #666;">Upload an image and adjust settings for real-time preview</p>
     </div>
@@ -98,6 +98,50 @@
     let lastUploadedFilename = null;
     let lastSelectedFile = null;
 
+    // Parse BMP header to extract metadata
+    function parseBMPHeader(arrayBuffer) {
+        const view = new DataView(arrayBuffer);
+
+        // Check BMP signature
+        const signature = String.fromCharCode(view.getUint8(0)) + String.fromCharCode(view.getUint8(1));
+        if (signature !== 'BM') {
+            return null;
+        }
+
+        const metadata = {
+            fileSize: view.getUint32(2, true),
+            dataOffset: view.getUint32(10, true),
+            dibHeaderSize: view.getUint32(14, true),
+            width: view.getUint32(18, true),
+            height: Math.abs(view.getInt32(22, true)),
+            planes: view.getUint16(26, true),
+            bitsPerPixel: view.getUint16(28, true),
+            compression: view.getUint32(30, true),
+            imageSize: view.getUint32(34, true),
+            xPixelsPerMeter: view.getUint32(38, true),
+            yPixelsPerMeter: view.getUint32(42, true),
+            colorsUsed: view.getUint32(46, true),
+            colorsImportant: view.getUint32(50, true)
+        };
+
+        // Calculate DPI from pixels per meter
+        metadata.xDPI = Math.round(metadata.xPixelsPerMeter * 0.0254);
+        metadata.yDPI = Math.round(metadata.yPixelsPerMeter * 0.0254);
+
+        // Compression types
+        const compressionTypes = {
+            0: 'None (BI_RGB)',
+            1: 'RLE 8-bit',
+            2: 'RLE 4-bit',
+            3: 'Bitfields',
+            4: 'JPEG',
+            5: 'PNG'
+        };
+        metadata.compressionName = compressionTypes[metadata.compression] || 'Unknown';
+
+        return metadata;
+    }
+
     // Store file reference on selection
     document.getElementById('testImage').addEventListener('change', function() {
         if (this.files && this.files[0]) {
@@ -179,26 +223,109 @@
             // Create object URL for the BMP
             const bmpUrl = URL.createObjectURL(blob);
 
-            // Display result
-            rightPanel.innerHTML = `
-                <h2>Result</h2>
-                <div style="margin-bottom: 15px;">
-                    <div class="stat">
-                        <strong>Status:</strong> <span class="success">200</span>
+            // Get current processing parameters
+            const currentParams = {
+                ditherMode: document.getElementById('ditherMode').value,
+                auto: document.querySelector('input[name="auto"]').checked,
+                gamma: document.getElementById('gamma').value,
+                brightness: document.getElementById('brightness').value,
+                contrast: document.getElementById('contrast').value
+            };
+
+            // Parse BMP metadata
+            blob.arrayBuffer().then(arrayBuffer => {
+                const bmpMetadata = parseBMPHeader(arrayBuffer);
+
+                // Create image to get dimensions
+                const img = new Image();
+                img.onload = function() {
+                    // Build metadata HTML
+                    let metadataHTML = `
+                        <h2>Result</h2>
+
+                        <div class="bitmap-visual">
+                            <img src="${bmpUrl}" alt="Processed image" style="max-width: 100%; border: 1px solid #ddd;">
+                        </div>
+                        <p style="color: #666; margin-top: 10px; font-style: italic;">Adjust sliders above to re-process in real-time</p>
+                        <h3>Meta-data</h3>
+
+                        <div style="margin-bottom: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                            <div class="stat">
+                                <strong>Status:</strong> <span class="success">200</span>
+                            </div>
+                            <div class="stat">
+                                <strong>Time:</strong> ${processingTime} ms
+                            </div>
+                            <div class="stat">
+                                <strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB
+                            </div>
+                            <div class="stat">
+                                <strong>Dimensions:</strong> ${img.naturalWidth} × ${img.naturalHeight} px
+                            </div>`;
+
+                    if (bmpMetadata) {
+                        metadataHTML += `
+                            <div class="stat">
+                                <strong>Color Depth:</strong> ${bmpMetadata.bitsPerPixel}-bit
+                            </div>
+                            <div class="stat">
+                                <strong>Compression:</strong> ${bmpMetadata.compressionName}
+                            </div>
+                            <div class="stat">
+                                <strong>Resolution:</strong> ${bmpMetadata.xDPI} × ${bmpMetadata.yDPI} DPI
+                            </div>
+                            <div class="stat">
+                                <strong>Colors Used:</strong> ${bmpMetadata.colorsUsed || 'All'}
+                            </div>`;
+                    }
+
+                    metadataHTML += `
+                            <div class="stat">
+                                <strong>Dither:</strong> ${currentParams.ditherMode}
+                            </div>
+                            <div class="stat">
+                                <strong>Auto Adjust:</strong> ${currentParams.auto ? 'Yes' : 'No'}
+                            </div>
+                            <div class="stat">
+                                <strong>Gamma:</strong> ${currentParams.gamma}
+                            </div>
+                            <div class="stat">
+                                <strong>Brightness:</strong> ${currentParams.brightness}
+                            </div>
+                            <div class="stat">
+                                <strong>Contrast:</strong> ${currentParams.contrast}
+                            </div>
+                        </div>
+                    `;
+
+                    rightPanel.innerHTML = metadataHTML;
+                };
+
+                // Initial display while image loads
+                rightPanel.innerHTML = `
+                    <h2>Result</h2>
+                    <div style="margin-bottom: 15px;">
+                        <div class="stat">
+                            <strong>Status:</strong> <span class="success">200</span>
+                        </div>
+                        <div class="stat">
+                            <strong>Time:</strong> ${processingTime} ms
+                        </div>
+                        <div class="stat">
+                            <strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB
+                        </div>
+                        <div class="stat">
+                            <strong>Loading metadata...</strong>
+                        </div>
                     </div>
-                    <div class="stat">
-                        <strong>Time:</strong> ${processingTime} ms
+                    <h3>Preview</h3>
+                    <div class="bitmap-visual">
+                        <img src="${bmpUrl}" alt="Processed image" style="max-width: 100%; border: 1px solid #ddd;">
                     </div>
-                    <div class="stat">
-                        <strong>Size:</strong> ${(blob.size / 1024).toFixed(2)} KB
-                    </div>
-                </div>
-                <h3>Preview</h3>
-                <div class="bitmap-visual">
-                    <img src="${bmpUrl}" alt="Processed image" style="max-width: 100%; border: 1px solid #ddd;">
-                </div>
-                <p style="color: #666; margin-top: 10px; font-style: italic;">Adjust sliders above to re-process in real-time</p>
-            `;
+                `;
+
+                img.src = bmpUrl;
+            });
         })
         .catch(error => {
             console.error('Error:', error);
