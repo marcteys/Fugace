@@ -8,7 +8,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die(json_encode(['error' => 'Only POST requests are allowed']));
 }
 
-// Log incoming POST data for debugging
+// Log incoming POST data for debugging (disabled)
+/*
 $logFile = 'post_log.txt';
 $logData = [
     'timestamp' => date('Y-m-d H:i:s'),
@@ -24,6 +25,7 @@ $logData = [
     }, $_FILES) : []
 ];
 file_put_contents($logFile, print_r($logData, true) . "\n" . str_repeat('=', 80) . "\n", FILE_APPEND);
+*/
 
 // Determine processing mode: new upload or re-process existing file
 $originalPath = null;

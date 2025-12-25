@@ -1,7 +1,6 @@
 <?php
 
 // Always load required utilities
-require_once("utils/ImageToText.php");
 require_once("utils/AtkinsonDither.php");
 require_once("utils/FloydSteinbergDither.php");
 
