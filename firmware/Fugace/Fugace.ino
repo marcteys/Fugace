@@ -67,7 +67,7 @@ const char* stateNames[] = {"IDLE", "COUNTDOWN", "CAPTURING", "UPLOADING", "PRIN
 // ============================================================================
 // HARDWARE OBJECTS
 // ============================================================================
-HardwareSerial printerSerial(1); // Use Serial1 for XIAO
+HardwareSerial printerSerial(2); // Use Serial1 for XIAO
 Tprinter myPrinter(&printerSerial, 9600);
 WiFiClientSecure wifiClient;
 
@@ -137,10 +137,11 @@ bool initCamera() {
 // PRINTER INITIALIZATION
 // ============================================================================
 bool initPrinter() {
+  Serial.println("Initializing printer...");
   printerSerial.begin(9600, SERIAL_8N1, rxPin, txPin);
   delay(100);
 
-  myPrinter.enableDtr(dtrPin, LOW);
+ // myPrinter.enableDtr(dtrPin, LOW);
   myPrinter.begin();
   myPrinter.setHeat(1, 224, 40);
   myPrinter.justify('C');
@@ -416,7 +417,7 @@ bool uploadAndReceiveBMP(camera_fb_t* fb, uint8_t** bitmap, uint16_t* width, uin
   *bitmap = (uint8_t*)ps_malloc(bitmapSize); // Use PSRAM
 
   if (*bitmap == NULL) {
-    Serial.println("Failed to allocate bitmap buffer");
+    Serial.println("Failed to allocate bitmap buffer. Use Tools>PSRAM>OPI PSRAM");
     wifiClient.stop();
     return false;
   }
@@ -646,7 +647,7 @@ void setup() {
   delay(1000);
 
   Serial.println("\n================================");
-  Serial.println("PhotoBooth XIAO Firmware v1.0");
+  Serial.println("Fugace XIAO Firmware v1.0");
   Serial.println("Seeed XIAO ESP32S3 Sense");
   Serial.println("================================\n");
 
@@ -697,11 +698,11 @@ void setup() {
   Serial.printf("PSRAM size: %d bytes\n", ESP.getPsramSize());
 
   // Print ready message
-  myPrinter.justify('C');
-  myPrinter.println("PhotoBooth Ready!");
-  myPrinter.println("XIAO ESP32S3");
-  myPrinter.println("Press button to");
-  myPrinter.println("take a photo");
+  //myPrinter.justify('C');
+  //myPrinter.println("PhotoBooth Ready!");
+ // myPrinter.println("XIAO ESP32S3");
+ // myPrinter.println("Press button to");
+ // myPrinter.println("take a photo");
   myPrinter.feed(2);
 
   setState(STATE_IDLE);
