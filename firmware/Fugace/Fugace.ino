@@ -16,6 +16,8 @@
 #include <WiFiClientSecure.h>
 #include "esp_camera.h"
 #include "TPrinter.h"
+#include "esp_sleep.h"
+#include "driver/rtc_io.h"
 
 #include "secrets.h"
 
@@ -50,6 +52,16 @@ const byte buttonPin = 1;     // Button input (D0) - internal pullup
 const byte ledPin = 21;       // Built-in LED
 
 // ============================================================================
+// SLEEP CONFIGURATION
+// ============================================================================
+const uint64_t SLEEP_DURATION_US = 20 * 1000000; // 20 seconds in microseconds
+const gpio_num_t WAKEUP_GPIO = GPIO_NUM_1;       // Button pin for wake
+
+// RTC memory for statistics (preserved across deep sleep)
+RTC_DATA_ATTR int sleepCount = 0;
+RTC_DATA_ATTR int photoCount = 0;
+
+// ============================================================================
 // STATE MACHINE
 // ============================================================================
 enum SystemState {
@@ -58,11 +70,12 @@ enum SystemState {
   STATE_CAPTURING,
   STATE_UPLOADING,
   STATE_PRINTING,
+  STATE_SLEEP,
   STATE_ERROR
 };
 
 volatile SystemState currentState = STATE_IDLE;
-const char* stateNames[] = {"IDLE", "COUNTDOWN", "CAPTURING", "UPLOADING", "PRINTING", "ERROR"};
+const char* stateNames[] = {"IDLE", "COUNTDOWN", "CAPTURING", "UPLOADING", "PRINTING", "SLEEP", "ERROR"};
 
 // ============================================================================
 // HARDWARE OBJECTS
@@ -574,6 +587,71 @@ void handleError(const char* msg) {
 }
 
 // ============================================================================
+// PERIPHERAL SHUTDOWN FOR DEEP SLEEP
+// ============================================================================
+void shutdownPeripherals() {
+  Serial.println("Shutting down peripherals for deep sleep...");
+
+  // 1. Turn off LED
+  digitalWrite(ledPin, LOW);
+
+  // 2. Shutdown WiFi completely
+  Serial.println("Stopping WiFi...");
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+ // esp_wifi_stop();
+
+  // 3. Shutdown UART (printer)
+  Serial.println("Stopping printer UART...");
+  printerSerial.flush();
+  printerSerial.end();
+  gpio_reset_pin(GPIO_NUM_43); // TX
+  gpio_reset_pin(GPIO_NUM_44); // RX
+
+  // 4. Detach button interrupt (EXT0 will handle wake)
+  Serial.println("Detaching button interrupt...");
+  detachInterrupt(digitalPinToInterrupt(buttonPin));
+
+  // 5. Shutdown camera (may cause watchdog issues - known bug)
+  Serial.println("Deinitializing camera...");
+  esp_err_t err = esp_camera_deinit();
+  if (err != ESP_OK) {
+    Serial.printf("Camera deinit warning: 0x%x (may be expected)\n", err);
+  }
+
+  Serial.println("Peripheral shutdown complete");
+}
+
+// ============================================================================
+// ENTER DEEP SLEEP
+// ============================================================================
+void enterDeepSleep() {
+  Serial.println("\n=== ENTERING DEEP SLEEP ===");
+
+  // Increment sleep counter (RTC memory)
+  sleepCount++;
+  Serial.printf("Sleep cycle #%d\n", sleepCount);
+
+  // Configure wake sources
+  esp_sleep_enable_timer_wakeup(SLEEP_DURATION_US);
+  Serial.printf("Timer wake: %d seconds\n", (int)(SLEEP_DURATION_US / 1000000));
+
+  esp_sleep_enable_ext0_wakeup(WAKEUP_GPIO, 0); // Wake on LOW (button press)
+  Serial.println("EXT0 wake: GPIO 1 (button)");
+
+  // Shutdown all peripherals
+  shutdownPeripherals();
+
+  // Final flush before sleep
+  Serial.println("Going to sleep NOW...");
+  Serial.flush();
+  delay(100); // Allow serial to complete
+
+  // Enter deep sleep (does not return)
+  esp_deep_sleep_start();
+}
+
+// ============================================================================
 // STATE MACHINE
 // ============================================================================
 void setState(SystemState newState) {
@@ -629,7 +707,13 @@ void runStateMachine() {
       printBitmap(bitmap, w, h);
       free(bitmap);
       bitmap = NULL;
-      setState(STATE_IDLE);
+      photoCount++; // Increment photo counter
+      setState(STATE_SLEEP);
+      break;
+
+    case STATE_SLEEP:
+      delay(1000); // Allow printer to finish
+      enterDeepSleep(); // Does not return
       break;
 
     case STATE_ERROR:
@@ -646,10 +730,31 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
+  // Check wake reason
+  esp_sleep_wakeup_cause_t wakeup_reason = esp_sleep_get_wakeup_cause();
+
   Serial.println("\n================================");
-  Serial.println("Fugace XIAO Firmware v1.0");
+  Serial.println("Fugace XIAO Firmware v1.1");
   Serial.println("Seeed XIAO ESP32S3 Sense");
   Serial.println("================================\n");
+
+  // Log wake reason
+  switch(wakeup_reason) {
+    case ESP_SLEEP_WAKEUP_EXT0:
+      Serial.println("Wake: Button pressed (EXT0)");
+      break;
+    case ESP_SLEEP_WAKEUP_TIMER:
+      Serial.println("Wake: Timer (20s timeout)");
+      break;
+    case ESP_SLEEP_WAKEUP_UNDEFINED:
+    default:
+      Serial.println("Wake: First boot or hardware reset");
+      sleepCount = 0; // Reset RTC counter
+      photoCount = 0;
+      break;
+  }
+
+  Serial.printf("Sleep cycles: %d | Photos: %d\n\n", sleepCount, photoCount);
 
   // Initialize LED
   pinMode(ledPin, OUTPUT);
